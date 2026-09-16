@@ -43,7 +43,17 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: npm publish --access public
+      # Skip a version the registry already has, so re-running a tag's workflow
+      # is safe and so 1.0.0 -- hand-published before this wiring existed --
+      # can carry a tag without a guaranteed-red run.
+      - name: Publish
+        run: |
+          VERSION=$(node -p 'require("./package.json").version')
+          if npm view "p2s_mapper@$VERSION" version >/dev/null 2>&1; then
+            echo "p2s_mapper@$VERSION is already on npm; skipping publish"
+          else
+            npm publish --access public
+          fi
 
   release:
     name: Create GitHub release
