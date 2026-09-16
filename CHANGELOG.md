@@ -1,3 +1,5 @@
+## [1.1.0](https://github.com/GMOD/p2s_mapper/compare/v1.0.0...v1.1.0) (2026-09-16)
+
 ## [1.0.0](https://github.com/GMOD/p2s_mapper/compare/v1.0.0...v1.0.0) (2026-09-16)
 
 ### Chores

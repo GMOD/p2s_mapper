@@ -1,7 +1,7 @@
 {
   "name": "p2s_mapper",
   "description": "Map a transcript's translation onto a protein structure: alignment, coordinates, chain choice, SIFTS, and the AlphaFold and PDBe lookups that find the structure",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "packageManager": "pnpm@11.15.1",
   "repository": {
     "type": "git",
