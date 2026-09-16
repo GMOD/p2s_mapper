@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/GMOD/p2s_mapper/compare/v1.1.0...v1.2.0) (2026-09-16)
+
+### Bug Fixes
+
+- Do not retry a 4xx, which repeats the same answer ([1a13936](https://github.com/GMOD/p2s_mapper/commit/1a13936ff7d1b22dedaa60076463375177aed79b))
+
 ## [1.1.0](https://github.com/GMOD/p2s_mapper/compare/v1.0.0...v1.1.0) (2026-09-16)
 
 ## [1.0.0](https://github.com/GMOD/p2s_mapper/compare/v1.0.0...v1.0.0) (2026-09-16)
