@@ -1,0 +1,8 @@
+dist
+node_modules
+.eslintcache
+*.gff
+data
+esm
+.claude/settings.local.json
+.claude/worktrees/
