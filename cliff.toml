@@ -7,10 +7,15 @@
 # CHANGELOG.md under standard-changelog (it drops non-conventional commits
 # with no fallback bucket, leaving blank version sections).
 
+#
+# The compare link tests `previous.version`, not `previous`: on a repo's first
+# tag git-cliff still hands the template a `previous` object, just without a
+# version, so `{% if previous %}` rendered `compare/...v1.0.0`.
+
 [changelog]
 body = """
 {% if version -%}
-## [{{ version | trim_start_matches(pat="v") }}](https://github.com/GMOD/p2s_mapper/compare/{% if previous %}{{ previous.version }}{% else %}{{ version }}{% endif %}...{{ version }}) ({{ timestamp | date(format="%Y-%m-%d") }})
+## [{{ version | trim_start_matches(pat="v") }}](https://github.com/GMOD/p2s_mapper/compare/{% if previous.version %}{{ previous.version }}{% else %}{{ version }}{% endif %}...{{ version }}) ({{ timestamp | date(format="%Y-%m-%d") }})
 {% else -%}
 ## [Unreleased]
 {% endif %}
