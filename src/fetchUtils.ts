@@ -14,6 +14,28 @@ function firstLine(body: string) {
 }
 
 /**
+ * A failed response, carrying its status so a caller can tell a definitive
+ * refusal from one worth asking again. `instanceof Error` and the message are
+ * unchanged, so existing error rendering is unaffected.
+ */
+export class HttpError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'HttpError'
+    this.status = status
+  }
+}
+
+/** A 4xx means the server understood and declined, so asking again gets the
+ * same answer. Anything else — 5xx, a timeout, a dropped connection — might
+ * not. */
+export function isDefinitiveFailure(e: unknown) {
+  return e instanceof HttpError && e.status >= 400 && e.status < 500
+}
+
+/**
  * The error a failed response deserves: status and host, plus at most the first
  * line of the body. A whole body is an HTML error page or a megabyte of JSON,
  * and pasting it into the dialog buries the one line that says what went wrong.
@@ -21,7 +43,10 @@ function firstLine(body: string) {
 export async function httpError(response: Response, url: string) {
   const detail = firstLine(await response.text().catch(() => ''))
   const status = `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''} from ${hostOf(url)}`
-  return new Error(detail ? `${status}: ${detail}` : status)
+  return new HttpError(
+    detail ? `${status}: ${detail}` : status,
+    response.status,
+  )
 }
 
 /**

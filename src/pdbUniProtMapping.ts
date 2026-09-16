@@ -14,7 +14,7 @@
 // position + 1 (see applyLociInteractivity.ts for the other place that boundary
 // is crossed).
 
-import { jsonfetch, timeout } from './fetchUtils.ts'
+import { isDefinitiveFailure, jsonfetch, timeout } from './fetchUtils.ts'
 
 import type { FetchOptions } from './fetchUtils.ts'
 
@@ -57,8 +57,17 @@ const SIFTS_RETRY_DELAYS_MS = [1000, 3000]
 // bounded, since a view reports itself loading until SIFTS answers
 const SIFTS_TIMEOUT_MS = 20_000
 
-/** SIFTS for an entry, retried twice: one failed request would otherwise
- * leave a fusion construct mapped onto its partner for the whole session. */
+/**
+ * SIFTS for an entry, retried twice: one failed request would otherwise leave a
+ * fusion construct mapped onto its partner for the whole session.
+ *
+ * A 4xx is not retried. PDBe answers 404 for an entry it has no UniProt
+ * mapping for at all — a DNA-only or obsolete entry — and that answer cannot
+ * change, so the retries only postponed it: measured 2026-09-16, `1hhb` and
+ * `1bna` each took three requests and ~4.8s to say so, which a caller shows as
+ * four and a half seconds of "resolving" for a structure that will never
+ * resolve.
+ */
 export async function fetchUniProtStructureMappings(
   pdbId: string,
   opts?: FetchOptions,
@@ -76,7 +85,8 @@ export async function fetchUniProtStructureMappings(
       )
     } catch (e) {
       const delay = SIFTS_RETRY_DELAYS_MS[attempt]
-      if (delay === undefined) {
+      // the caller's own abort is not a failure to retry either
+      if (delay === undefined || isDefinitiveFailure(e) || signal?.aborted) {
         throw e
       }
       await timeout(delay, signal)

@@ -140,8 +140,12 @@ yields a model with thousands of misread atoms and zero polymer entities.
 
 `caCoordsToPdb`, `hasValidCaCoords` — a PDB file from Foldseek Cα coordinates.
 
-`rawfetch`, `myfetch`, `jsonfetch`, `httpError`, `networkError`, `abortError`,
-`timeout`, `FetchOptions`.
+`rawfetch`, `myfetch`, `jsonfetch`, `httpError`, `HttpError`,
+`isDefinitiveFailure`, `networkError`, `abortError`, `timeout`, `FetchOptions`.
+A failed response throws an `HttpError` carrying its `status`, and
+`isDefinitiveFailure` is true for a 4xx — the server understood and declined, so
+retrying repeats the answer. `fetchUniProtStructureMappings` uses it: PDBe
+answers 404 for an entry it has no UniProt mapping for at all.
 
 ## License
 

@@ -1,7 +1,8 @@
-import { expect, test } from 'vitest'
+import { describe, expect, it, test, vi } from 'vitest'
 
 import {
   chooseUniProtMappingForEntity,
+  fetchUniProtStructureMappings,
   fusionPartnerPositions,
   identityUniProtPositionMap,
   makeUniProtPositionMap,
@@ -325,4 +326,69 @@ test('unmaps nothing when no accession is half identical over what it covers', (
     range(0, 500).filter(p => p % 4 !== 0),
   )
   expect(fusionPartnerPositions(SEGMENTS_2RH1, CHIMERA, mapped).size).toBe(0)
+})
+
+// The retry policy. `fetchUniProtStructureMappings` retries twice at 1s and 3s
+// because one dropped request would leave a fusion construct mapped onto its
+// partner for the rest of a session — but a 4xx is the server declining, not
+// failing, and waiting 4s to repeat it costs a caller four seconds of
+// "resolving" for a structure that will never resolve.
+describe('fetchUniProtStructureMappings retry policy', () => {
+  const response = (status: number, body: unknown) =>
+    ({
+      ok: status >= 200 && status < 300,
+      status,
+      statusText: '',
+      json: () => Promise.resolve(body),
+      text: () => Promise.resolve(''),
+    }) as unknown as Response
+
+  it('does not retry a 404, which PDBe uses for an entry it has no mapping for', async () => {
+    const fetch = vi.fn().mockResolvedValue(response(404, {}))
+    await expect(
+      fetchUniProtStructureMappings('1bna', { fetch }),
+    ).rejects.toThrow(/404/)
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not retry any other 4xx either', async () => {
+    const fetch = vi.fn().mockResolvedValue(response(400, {}))
+    await expect(
+      fetchUniProtStructureMappings('nonsense', { fetch }),
+    ).rejects.toThrow()
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('still retries a 500, which may not be the same answer twice', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(response(500, {}))
+      .mockResolvedValueOnce(response(200, SIFTS_1TUP))
+    const mappings = await fetchUniProtStructureMappings('1tup', { fetch })
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(mappings.map(m => m.accession)).toEqual(['P04637'])
+  })
+
+  it('gives up after two retries', async () => {
+    const fetch = vi.fn().mockResolvedValue(response(503, {}))
+    await expect(
+      fetchUniProtStructureMappings('1tup', { fetch }),
+    ).rejects.toThrow()
+    expect(fetch).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not retry once the caller has aborted', async () => {
+    const controller = new AbortController()
+    const fetch = vi.fn().mockImplementation(() => {
+      controller.abort()
+      return Promise.resolve(response(500, {}))
+    })
+    await expect(
+      fetchUniProtStructureMappings('1tup', {
+        fetch,
+        signal: controller.signal,
+      }),
+    ).rejects.toThrow()
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
 })
