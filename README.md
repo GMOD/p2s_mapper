@@ -7,9 +7,9 @@ PDBe and UniProt lookups that find a structure to map in the first place.
 
 Extracted from
 [jbrowse-plugin-protein3d](https://github.com/GMOD/jbrowse-plugin-protein3d),
-which is where the measurements behind the scoring rules were made. The package
-has no React, no JBrowse and no Mol\* dependency: a loaded Mol\* model reaches
-it through narrow structural interfaces, and `g2p_mapper` is the only runtime
+where we made the measurements behind the scoring rules. The package has no
+React, no JBrowse and no Mol\* dependency: a loaded Mol\* model reaches it
+through narrow structural interfaces, and `g2p_mapper` is the only runtime
 dependency.
 
 ## Install
@@ -20,23 +20,22 @@ npm install p2s_mapper
 
 ## Coordinate conventions
 
-One residue has up to four numbers, and mixing them is the off-by-one class of
-bug this package exists to prevent. **Every stored or computed coordinate is a
-0-based position**: an index into the ungapped structure sequence or the
-ungapped transcript sequence, which is the one numbering that is dense and
-zero-based whatever the file. `coordinates.ts` brands the three internal spaces
-— structure position, transcript position, alignment column — so the compiler
-rejects mixing them. Two conversions leave that space, and each has one door.
-**Mol\* is addressed by `label_seq_id`**, which is `position + 1` only for a
-file carrying `entity_poly_seq` or SEQRES; a SEQRES-less PDB numbers its
-observed residues by author numbering and leaves holes at unobserved loops, so
-`Entity.seqIds` carries the real ids and every crossing goes through
-`toLabelSeqIds`, `rangeToLabelSeqIds` or `makeLabelSeqIdIndex`. **The user is
-shown `auth_seq_id`**, the depositors' numbering, which is what papers and
-UniProt cite (1TUP position 154 reads 248) and what Mol\*'s own hover shows;
-`Entity.authSeqIds` carries it and it is display-only. UniProt positions are
-1-based, and `pdbUniProtMapping` converts them with SIFTS rather than assuming
-any offset.
+One residue has up to four numbers, and mixing them causes the off-by-one bugs
+this package's types prevent. **Every stored or computed coordinate is a 0-based
+position**: an index into the ungapped structure sequence or the ungapped
+transcript sequence, the one numbering that is dense and zero-based whatever the
+file. `coordinates.ts` brands the three internal spaces — structure position,
+transcript position, alignment column — so the compiler rejects mixing them. Two
+conversions leave that space, and each has exactly one correct route. **Mol\* is
+addressed by `label_seq_id`**, which is `position + 1` only for a file carrying
+`entity_poly_seq` or SEQRES; a SEQRES-less PDB numbers its observed residues by
+author numbering and leaves holes at unobserved loops, so `Entity.seqIds`
+carries the real ids and every crossing goes through `toLabelSeqIds`,
+`rangeToLabelSeqIds` or `makeLabelSeqIdIndex`. **The user sees `auth_seq_id`**,
+the depositors' numbering that papers and UniProt cite (1TUP position 154
+reads 248) and that Mol\*'s own hover shows; `Entity.authSeqIds` carries it, and
+it is display-only. UniProt positions are 1-based, and `pdbUniProtMapping`
+converts them with SIFTS rather than assuming any offset.
 
 ## Exports
 
@@ -55,8 +54,8 @@ accessors, not by index.
 
 `alignmentQuality`, `isLowSimilarity`, `describeAlignmentQuality`,
 `describeTranscriptCoverage`, `describeCoveredRange` — identity over the shorter
-sequence is what separates a real match from a chance local alignment; local
-identity alone does not.
+sequence separates a real match from a chance local alignment; local identity
+alone does not.
 
 `AlignmentAlgorithm`, `coerceAlignmentAlgorithm`, `ALIGNMENT_ALGORITHM_LABELS`.
 
@@ -134,9 +133,9 @@ host can hand in an instrumented one and a test can hand in a double.
 
 `structureFormatFromContent`, `structureFormatFromName`,
 `structureFileExtension`, `isBinaryStructureUrl` — which parser a structure
-needs, sniffed from **content** rather than a filename. Getting it wrong fails
-asymmetrically: PDB read as mmCIF throws, while mmCIF read as PDB succeeds and
-yields a model with thousands of misread atoms and zero polymer entities.
+needs, sniffed from **content** rather than a filename. PDB read as mmCIF
+throws, while mmCIF read as PDB succeeds and yields a model with thousands of
+misread atoms and zero polymer entities.
 
 `caCoordsToPdb`, `hasValidCaCoords` — a PDB file from Foldseek Cα coordinates.
 
