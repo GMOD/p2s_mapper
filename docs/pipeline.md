@@ -9,6 +9,11 @@ one.
 The graph source is [`img/pipeline.dot`](img/pipeline.dot); regenerate with
 `dot -Tsvg docs/img/pipeline.dot -o docs/img/pipeline.svg`.
 
+The chart has two lanes that run independently and meet when the chain is
+picked: lane 1 turns the gene into a protein sequence, lane 2 finds a 3D
+structure. Neither needs the other until then, because choosing the chain
+compares the two sequences.
+
 ## Steps, with the functions behind each box
 
 1. **A gene, spelled as a protein.** Genome ↔ protein positions belong to

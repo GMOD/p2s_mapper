@@ -1,7 +1,8 @@
 digraph pipeline {
   rankdir = TB
+  compound = true
   bgcolor = "white"
-  nodesep = 0.4
+  nodesep = 0.5
   ranksep = 0.45
 
   node [
@@ -22,19 +23,40 @@ digraph pipeline {
     arrowsize = 0.7
   ]
 
-  gene [label = "A gene on the genome", fillcolor = "#ddf4ff"]
-  protein [label = "Its protein, spelled out\nas a string of amino acids"]
-  find [label = "Look up 3D structures\nof that protein"]
-  chain [label = "Pick the chain in the structure\nthat is this protein"]
-  match [label = "Line the two sequences up\nresidue by residue"]
-  official [label = "Cross-check against the\nofficial residue numbering\n(optional)"]
-  maps [label = "Result: a lookup table\nfrom any position to its partner", fillcolor = "#dafbe1"]
-  use [label = "Click a residue in 3D,\nsee the DNA; click the DNA,\nsee the residue", fillcolor = "#dafbe1"]
+  gene [label = "Start: a gene on the genome", fillcolor = "#ddf4ff"]
 
-  gene -> protein [label = "g2p_mapper\ngenome ↔ protein"]
+  subgraph cluster_a {
+    label = "Lane 1: the gene's protein"
+    labeljust = l
+    fontname = "Helvetica,Arial,sans-serif"
+    fontsize = 11
+    fontcolor = "#57606a"
+    color = "#8c959f"
+    style = "rounded,dashed"
+    protein [label = "Spell the gene out\nas a string of amino acids\n(g2p_mapper)"]
+  }
+
+  subgraph cluster_b {
+    label = "Lane 2: a 3D structure, in parallel"
+    labeljust = l
+    fontname = "Helvetica,Arial,sans-serif"
+    fontsize = 11
+    fontcolor = "#57606a"
+    color = "#8c959f"
+    style = "rounded,dashed"
+    find [label = "Look up 3D structures\nof that protein"]
+  }
+
+  chain [label = "Lanes meet: pick the chain in the\nstructure that is this protein"]
+  match [label = "Line the two sequences up\nresidue by residue"]
+  official [label = "Optional: cross-check against\nthe official residue numbering", fillcolor = "#fff8c5"]
+  maps [label = "Result: a lookup table\nfrom any position to its partner", fillcolor = "#dafbe1"]
+  use [label = "Click a residue in 3D, see the DNA.\nClick the DNA, see the residue.", fillcolor = "#dafbe1"]
+
   gene -> find
-  protein -> match
+  gene -> protein
   find -> chain
+  protein -> chain
   chain -> match
   match -> maps
   chain -> official [style = dashed]
