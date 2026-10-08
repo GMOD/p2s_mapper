@@ -1,3 +1,9 @@
+## [1.2.2](https://github.com/GMOD/p2s_mapper/compare/v1.2.1...v1.2.2) (2026-10-08)
+
+### Bug Fixes
+
+- Look up YP_ and AP_ RefSeq proteins, and keep an empty answer when the wider taxon search fails ([f8d35e4](https://github.com/GMOD/p2s_mapper/commit/f8d35e48b47c2e27870f8fa160cb406f9cfbd794))
+
 ## [1.2.1](https://github.com/GMOD/p2s_mapper/compare/v1.2.0...v1.2.1) (2026-10-08)
 
 ### Bug Fixes
