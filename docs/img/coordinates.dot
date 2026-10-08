@@ -1,0 +1,37 @@
+digraph coordinates {
+  rankdir = LR
+  bgcolor = "white"
+  nodesep = 0.4
+  ranksep = 0.6
+
+  node [
+    fontname = "Helvetica,Arial,sans-serif"
+    fontsize = 11
+    fontcolor = "#1f2328"
+    color = "#8c959f"
+    style = "filled"
+    fillcolor = "#f6f8fa"
+    shape = box
+    margin = "0.18,0.10"
+  ]
+  edge [
+    fontname = "Helvetica,Arial,sans-serif"
+    fontsize = 9
+    fontcolor = "#57606a"
+    color = "#8c959f"
+    arrowsize = 0.7
+  ]
+
+  tp [label = "transcriptPos\n0-based, ungapped", fillcolor = "#ddf4ff"]
+  col [label = "alignmentCol\nalignment column"]
+  sp [label = "structurePos\n0-based, ungapped", fillcolor = "#ddf4ff"]
+  label [label = "label_seq_id\nwhat Mol* addresses", fillcolor = "#fff8c5"]
+  auth [label = "auth_seq_id\nwhat the user sees", fillcolor = "#dafbe1"]
+  up [label = "UniProt position\n1-based"]
+
+  tp -> col [label = "transcriptPositionToAlignmentMap"]
+  col -> sp [label = "structurePositionToAlignmentMap\n(inverse)"]
+  sp -> label [label = "toLabelSeqIds"]
+  sp -> auth [label = "Entity.authSeqIds\n(display only)"]
+  sp -> up [label = "makeUniProtPositionMap\n(SIFTS)", dir = both]
+}
