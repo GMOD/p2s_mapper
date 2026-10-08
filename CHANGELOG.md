@@ -1,3 +1,13 @@
+## [1.2.1](https://github.com/GMOD/p2s_mapper/compare/v1.2.0...v1.2.1) (2026-10-08)
+
+### Bug Fixes
+
+- Search a taxon's descendants when the taxon itself has no entry ([d8f74a0](https://github.com/GMOD/p2s_mapper/commit/d8f74a0e2ad16c9e43118c80ed8ae2e81db505b9))
+
+### Documentation
+
+- Fix anti-AI writing tropes in README ([84005ab](https://github.com/GMOD/p2s_mapper/commit/84005ab112b33ec21fdfe9e0f8612954865e4713))
+
 ## [1.2.0](https://github.com/GMOD/p2s_mapper/compare/v1.1.0...v1.2.0) (2026-09-16)
 
 ### Bug Fixes
