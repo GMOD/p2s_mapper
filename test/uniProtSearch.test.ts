@@ -74,6 +74,34 @@ describe('searchUniProtEntries', () => {
     expect(queryOf(calls[0]!)).toContain('organism_id:10090')
   })
 
+  // fission yeast: the assembly names the species, Swiss-Prot the strain
+  it("asks the taxon's descendants when the taxon itself has no entry", async () => {
+    const calls = stubUniProt(url => ({
+      ok: true,
+      results: queryOf(url).includes('taxonomy_id:4896')
+        ? [reviewedEntry('P04551', 'Schizosaccharomyces pombe')]
+        : [],
+    }))
+    const { entries } = await searchUniProtEntries({
+      geneName: 'cdc2',
+      organismId: 4896,
+    })
+    expect(entries.map(e => e.accession)).toEqual(['P04551'])
+    expect(calls.map(queryOf)).toEqual([
+      'gene_exact:"cdc2" AND organism_id:4896 AND reviewed:true',
+      'gene_exact:"cdc2" AND taxonomy_id:4896 AND reviewed:true',
+    ])
+  })
+
+  it('does not ask the descendants when the taxon answers', async () => {
+    const calls = stubUniProt(() => ({
+      ok: true,
+      results: [reviewedEntry('P04637', 'Homo sapiens')],
+    }))
+    await searchUniProtEntries({ geneName: 'TP53', organismId: 9606 })
+    expect(calls).toHaveLength(1)
+  })
+
   it('runs the gene-name query alongside the xrefs, not after them', async () => {
     let settleXref: () => void = () => undefined
     const xrefBlocked = new Promise<void>(resolve => {
