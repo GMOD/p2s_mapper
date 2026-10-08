@@ -1,39 +1,52 @@
 # Pipeline
 
-How a gene ends up mapped onto a 3D structure. The solid path is the core. The
-dashed path cross-checks against PDBe's official numbering (SIFTS) when it has
-one.
+How a gene ends up mapped onto a 3D structure. The chart has two sides that run
+independently and meet at the chain match. Dashed boxes are optional or
+advisory.
 
-![From a gene to a clickable structure](img/pipeline.svg)
+![From a gene on the genome to a residue in 3D, and back](img/pipeline.svg)
 
 The graph source is [`img/pipeline.dot`](img/pipeline.dot); regenerate with
 `dot -Tsvg docs/img/pipeline.dot -o docs/img/pipeline.svg`.
 
-The chart has two lanes that run independently and meet when the chain is
-picked: lane 1 turns the gene into a protein sequence, lane 2 finds a 3D
-structure. Neither needs the other until then, because choosing the chain
-compares the two sequences.
+p2s_mapper is a toolkit of separate functions with no orchestrator, so the host
+app wires them together. The chart shows the order their dependencies force.
 
 ## Steps, with the functions behind each box
 
-1. **A gene, spelled as a protein.** Genome ↔ protein positions belong to
-   [g2p_mapper](https://github.com/GMOD/g2p_mapper); this package starts from
-   the protein sequence it produces. When a gene has several isoforms,
-   `classifyIsoforms`, `selectBestTranscript` and `pickStructureSequence` rank
-   them against a chain.
-2. **Look up structures.** AlphaFold, 3D-Beacons and PDBe each answer a
-   different question; see [api.md](api.md#structure-sources).
-3. **Pick the chain.** The host app loads the file in Mol\*. A structure often
-   holds several molecules, so `chooseMappedEntity` scores each one and keeps
-   the one that is the gene's protein. This package never imports Mol\*;
-   `extractEntities` reads the loaded model through a narrow interface.
-4. **Line the sequences up.** `runLocalAlignment` runs Smith-Waterman or
-   Needleman-Wunsch over BLOSUM62 with affine gaps. The alignment has two rows:
-   row 0 is the transcript, row 1 is the structure.
-5. **Cross-check (optional).** `fetchUniProtStructureMappings` and
-   `makeUniProtPositionMap` bring in PDBe's SIFTS numbering for UniProt
-   positions.
-6. **Build the lookup tables.** `makeCoordinateMapper` builds every conversion
+**Gene side**
+
+1. **The gene and its table.** [g2p_mapper](https://github.com/GMOD/g2p_mapper)
+   builds the genome ↔ protein position table. This package calls only its
+   `getCodonRanges`, through `codonGenomeSpan`; the host builds the table and
+   translates the gene.
+
+**Structure side**
+
+2. **Look up the protein.** `searchUniProtEntries` finds the UniProt entry by
+   the gene's database IDs or name.
+3. **Choose a source.** AlphaFold (`fetchAlphaFoldModels`) or lab-solved PDB
+   entries (`fetchExperimentalStructures`, `pdbeBestStructuresUrl`). The user
+   can also name a structure directly. See [api.md](api.md#structure-sources).
+4. **Read the chains.** The host loads the file in Mol\*, and `extractEntities`
+   reads each chain's sequence through a narrow interface. This package never
+   imports Mol\*.
+
+**Where they meet**
+
+5. **Match the chain.** `chooseMappedEntity` aligns the gene's protein against
+   every chain and keeps the best match. The same call returns the alignment, so
+   there is no separate "align" step. The alignment is Smith-Waterman or
+   Needleman-Wunsch over BLOSUM62 with affine gaps; row 0 is the transcript, row
+   1 is the structure.
+6. **Check the match (advisory).** `alignmentQuality` and `isLowSimilarity` flag
+   a weak match. Nothing blocks on it, so the host decides what to show.
+7. **Trim with SIFTS (optional, PDB only).** `fusionPartnerPositions` finds
+   residues PDBe assigns to a fused partner protein, and
+   `unmapStructurePositions` removes them. `makeUniProtPositionMap` places
+   UniProt annotations. The residue mapping itself comes from the alignment, not
+   from SIFTS.
+8. **Build the lookup tables.** `makeCoordinateMapper` builds every conversion
    once from the alignment, branded by [coordinate space](coordinates.md).
 
 Worried the result is wrong? See the [FAQ](faq.md).

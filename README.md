@@ -7,7 +7,7 @@ Map a transcript's translation onto a protein structure.
 - **Convert coordinates** both ways between transcript, alignment, structure,
   Mol\* and UniProt numbering
 - **Choose the chain** that is the gene's product
-- **Apply SIFTS** residue numbering
+- **Use SIFTS** to place UniProt annotations and drop fusion-partner residues
 - **Find structures** through AlphaFold, 3D-Beacons, PDBe and UniProt
 
 ## Works with g2p_mapper
@@ -32,7 +32,7 @@ npm install p2s_mapper
 
 ## How it fits together
 
-![From a gene to a clickable structure](docs/img/pipeline.svg)
+![From a gene on the genome to a residue in 3D, and back](docs/img/pipeline.svg)
 
 ## Docs
 

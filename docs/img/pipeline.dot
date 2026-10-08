@@ -1,65 +1,66 @@
-digraph pipeline {
-  rankdir = TB
-  compound = true
-  bgcolor = "white"
-  nodesep = 0.5
-  ranksep = 0.45
+digraph p2s {
+  graph [bgcolor=white, fontname=Helvetica, rankdir=TB, nodesep=0.35, ranksep=0.45,
+         labelloc=t, fontsize=18, pad=0.3, newrank=true,
+         label=<From a gene on the genome to a residue in 3D, and back<BR/><FONT POINT-SIZE="11" COLOR="#666666">dashed = optional or advisory · the two sides run independently and meet at the chain match</FONT><BR/> >]
+  node  [fontname=Helvetica, fontsize=11, shape=box, style="rounded,filled",
+         penwidth=1.2, margin="0.18,0.08"]
+  edge  [fontname=Helvetica, fontsize=9, color="#555555", fontcolor="#444444"]
 
-  node [
-    fontname = "Helvetica,Arial,sans-serif"
-    fontsize = 12
-    fontcolor = "#1f2328"
-    color = "#8c959f"
-    style = "filled"
-    fillcolor = "#f6f8fa"
-    shape = box
-    margin = "0.2,0.12"
-  ]
-  edge [
-    fontname = "Helvetica,Arial,sans-serif"
-    fontsize = 10
-    fontcolor = "#57606a"
-    color = "#8c959f"
-    arrowsize = 0.7
-  ]
-
-  gene [label = "Start: a gene on the genome", fillcolor = "#ddf4ff"]
-
-  subgraph cluster_a {
-    label = "Lane 1: the gene's protein"
-    labeljust = l
-    fontname = "Helvetica,Arial,sans-serif"
-    fontsize = 11
-    fontcolor = "#57606a"
-    color = "#8c959f"
-    style = "rounded,dashed"
-    protein [label = "Spell the gene out\nas a string of amino acids\n(g2p_mapper)"]
+  subgraph cluster_gene {
+    label="Gene side  (runs on its own)"; fontsize=12; fontcolor="#1f4e79"
+    style="rounded,dashed"; color="#9dc3e6"
+    gene  [label="The gene in the genome browser\nwhere its exons sit, and the protein they spell",
+           fillcolor="#deebf7", color="#2e75b6"]
+    table [label="Genome ↔ protein position table\nwhich three DNA letters make each amino acid\n(g2p_mapper)",
+           fillcolor="#deebf7", color="#2e75b6"]
   }
 
-  subgraph cluster_b {
-    label = "Lane 2: a 3D structure, in parallel"
-    labeljust = l
-    fontname = "Helvetica,Arial,sans-serif"
-    fontsize = 11
-    fontcolor = "#57606a"
-    color = "#8c959f"
-    style = "rounded,dashed"
-    find [label = "Look up 3D structures\nof that protein"]
+  subgraph cluster_struct {
+    label="Structure side  (runs on its own)"; fontsize=12; fontcolor="#375623"
+    style="rounded,dashed"; color="#a9d18e"
+    uniprot [label="Look the protein up in UniProt\nby the gene's database IDs or its name",
+             fillcolor="#e2f0d9", color="#548235"]
+    af      [label="AlphaFold predicted model\nprefers one folded from this exact protein",
+             fillcolor="#e2f0d9", color="#548235"]
+    pdb     [label="Lab-solved structures (PDB)\nbest coverage first, then sharpest",
+             fillcolor="#e2f0d9", color="#548235"]
+    own     [label="or: a structure the user names\n(PDB id, link or file)",
+             fillcolor="white", color="#548235", style="rounded,dashed"]
+    chains  [label="Read each chain's sequence\nout of the chosen structure",
+             fillcolor="#e2f0d9", color="#548235"]
   }
 
-  chain [label = "Lanes meet: pick the chain in the\nstructure that is this protein"]
-  match [label = "Line the two sequences up\nresidue by residue"]
-  official [label = "Optional: cross-check against\nthe official residue numbering", fillcolor = "#fff8c5"]
-  maps [label = "Result: a lookup table\nfrom any position to its partner", fillcolor = "#dafbe1"]
-  use [label = "Click a residue in 3D, see the DNA.\nClick the DNA, see the residue.", fillcolor = "#dafbe1"]
+  match  [label="Line the protein up against every chain\nand keep the one it matches best\n(chooseMappedEntity)",
+          fillcolor="#fce4cc", color="#c55a11", penwidth=1.6]
+  check  [label="Is the match real or chance?\nflags a weak match; does not block",
+          fillcolor="white", color="#c55a11", style="rounded,dashed"]
+  sifts  [label="PDB only, optional: ask PDBe (SIFTS)\nunmaps residues of a fused partner protein,\nplaces UniProt annotations",
+          fillcolor="white", color="#c55a11", style="rounded,dashed"]
+  lookup [label="Residue lookup tables\n3D chain ↔ protein ↔ alignment column",
+          fillcolor="#fce4cc", color="#c55a11"]
+  result [label="Click a residue in 3D → highlight its codon on the genome\nClick the genome → highlight the residue in 3D",
+          fillcolor="#e4dcf1", color="#7030a0", penwidth=1.6, fontsize=12]
 
-  gene -> find
-  gene -> protein
-  find -> chain
-  protein -> chain
-  chain -> match
-  match -> maps
-  chain -> official [style = dashed]
-  official -> maps [style = dashed]
-  maps -> use
+  gene -> table
+  uniprot -> af
+  uniprot -> pdb
+  af -> chains
+  pdb -> chains [label=" user picks one"]
+  own -> chains [style=dashed]
+
+  gene -> af [style=dashed, color="#2e75b6", constraint=false,
+              label=" which isoform?", fontcolor="#2e75b6"]
+  gene -> match [label=" protein sequence", color="#2e75b6", fontcolor="#2e75b6"]
+  chains -> match [color="#548235"]
+
+  match -> check  [style=dashed, arrowhead=none]
+  match -> lookup [label=" the alignment"]
+  match -> sifts  [style=dashed]
+  sifts -> lookup [style=dashed, label=" trimmed alignment"]
+
+  lookup -> result
+  table  -> result [color="#2e75b6", label=" protein position\n↔ genome", fontcolor="#2e75b6"]
+
+  {rank=same; gene; uniprot; own}
+  {rank=same; check; sifts}
 }
