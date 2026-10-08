@@ -1,66 +1,90 @@
-digraph p2s {
-  graph [bgcolor=white, fontname=Helvetica, rankdir=TB, nodesep=0.35, ranksep=0.45,
-         labelloc=t, fontsize=18, pad=0.3, newrank=true,
-         label=<From a gene on the genome to a residue in 3D, and back<BR/><FONT POINT-SIZE="11" COLOR="#666666">dashed = optional or advisory · the two sides run independently and meet at the chain match</FONT><BR/> >]
-  node  [fontname=Helvetica, fontsize=11, shape=box, style="rounded,filled",
-         penwidth=1.2, margin="0.18,0.08"]
-  edge  [fontname=Helvetica, fontsize=9, color="#555555", fontcolor="#444444"]
+// Source for docs/img/pipeline.svg, which docs/pipeline.md and the README embed.
+// Regenerate with: dot -Tsvg docs/img/pipeline.dot -o docs/img/pipeline.svg
+//
+// Main path only: how a transcript and a structure meet at chooseMappedEntity.
+// Step numbers match the list in docs/pipeline.md.
+//
+// SYNC: palette, legend and font sizes follow ~/src/gmod/bam-js/docs/img/dataflow.dot
+// (entry/exit blue, I/O green, compute orange, outside this package purple).
+digraph p2smapper {
+  rankdir=TB
+  newrank=true
+  bgcolor="white"
+  nodesep=0.3
+  ranksep=0.4
+  node [shape=box style="filled,rounded" fillcolor="#f6f8fa" color="#57606a"
+        fontname="Helvetica" fontsize=10 margin="0.14,0.07"]
+  edge [color="#57606a" fontname="Helvetica" fontsize=9]
 
   subgraph cluster_gene {
-    label="Gene side  (runs on its own)"; fontsize=12; fontcolor="#1f4e79"
-    style="rounded,dashed"; color="#9dc3e6"
-    gene  [label="The gene in the genome browser\nwhere its exons sit, and the protein they spell",
-           fillcolor="#deebf7", color="#2e75b6"]
-    table [label="Genome ↔ protein position table\nwhich three DNA letters make each amino acid\n(g2p_mapper)",
-           fillcolor="#deebf7", color="#2e75b6"]
+    label="Gene side"
+    labelloc="t"
+    fontname="Helvetica"
+    fontsize=10
+    fontcolor="#57606a"
+    color="#d0d7de"
+    style="rounded,dashed"
+    transcript [label="transcript\nCDS exons, strand, phase" fillcolor="#ddf4ff" color="#0969da"]
+    translate  [label="1. translate the CDS\ntranscript protein sequence" fillcolor="#fbefff" color="#8250df"]
+    g2p        [label="1. genomeToTranscriptSeqMapping\ngenome position ↔ protein position" fillcolor="#fbefff" color="#8250df"]
   }
 
   subgraph cluster_struct {
-    label="Structure side  (runs on its own)"; fontsize=12; fontcolor="#375623"
-    style="rounded,dashed"; color="#a9d18e"
-    uniprot [label="Look the protein up in UniProt\nby the gene's database IDs or its name",
-             fillcolor="#e2f0d9", color="#548235"]
-    af      [label="AlphaFold predicted model\nprefers one folded from this exact protein",
-             fillcolor="#e2f0d9", color="#548235"]
-    pdb     [label="Lab-solved structures (PDB)\nbest coverage first, then sharpest",
-             fillcolor="#e2f0d9", color="#548235"]
-    own     [label="or: a structure the user names\n(PDB id, link or file)",
-             fillcolor="white", color="#548235", style="rounded,dashed"]
-    chains  [label="Read each chain's sequence\nout of the chosen structure",
-             fillcolor="#e2f0d9", color="#548235"]
+    label="Structure side"
+    labelloc="t"
+    fontname="Helvetica"
+    fontsize=10
+    fontcolor="#57606a"
+    color="#d0d7de"
+    style="rounded,dashed"
+    uniprot [label="2. searchUniProtEntries\nUniProt accession" fillcolor="#dafbe1" color="#1a7f37"]
+    af      [label="3. AlphaFold: fetchAlphaFoldModels\npickAlphaFoldModel" fillcolor="#dafbe1" color="#1a7f37"]
+    pdb     [label="3. or PDB: fetchExperimentalStructures\nPDBe best structures" fillcolor="#dafbe1" color="#1a7f37"]
+    own     [label="3. or caller-supplied\nPDB id, URL or file" style="filled,rounded,dashed"]
+    entities [label="4. extractEntities\nMol* model → polymer entity sequences"]
   }
 
-  match  [label="Line the protein up against every chain\nand keep the one it matches best\n(chooseMappedEntity)",
-          fillcolor="#fce4cc", color="#c55a11", penwidth=1.6]
-  check  [label="Is the match real or chance?\nflags a weak match; does not block",
-          fillcolor="white", color="#c55a11", style="rounded,dashed"]
-  sifts  [label="PDB only, optional: ask PDBe (SIFTS)\nunmaps residues of a fused partner protein,\nplaces UniProt annotations",
-          fillcolor="white", color="#c55a11", style="rounded,dashed"]
-  lookup [label="Residue lookup tables\n3D chain ↔ protein ↔ alignment column",
-          fillcolor="#fce4cc", color="#c55a11"]
-  result [label="Click a residue in 3D → highlight its codon on the genome\nClick the genome → highlight the residue in 3D",
-          fillcolor="#e4dcf1", color="#7030a0", penwidth=1.6, fontsize=12]
+  match  [label="5. chooseMappedEntity\nalign the transcript to each entity,\nkeep the best explainedFraction" fillcolor="#ffd8b5" color="#bc4c00"]
+  check  [label="6. alignmentQuality · isLowSimilarity\nflags a chance match, never blocks" style="filled,rounded,dashed" fillcolor="#ffd8b5" color="#bc4c00"]
+  sifts  [label="7. PDB entries only\nfetchUniProtStructureMappings\nfusionPartnerPositions → unmapStructurePositions" style="filled,rounded,dashed" fillcolor="#dafbe1" color="#1a7f37"]
+  mapper [label="8. makeCoordinateMapper\ntranscript position ↔ structure position" fillcolor="#ffd8b5" color="#bc4c00"]
+  result [label="toLabelSeqIds · codonGenomeSpan\nMol* residue ↔ genome span" fillcolor="#ddf4ff" color="#0969da"]
 
-  gene -> table
+  transcript -> translate
+  transcript -> g2p
+  transcript -> uniprot [style=invis]
   uniprot -> af
   uniprot -> pdb
-  af -> chains
-  pdb -> chains [label=" user picks one"]
-  own -> chains [style=dashed]
+  af -> entities
+  pdb -> entities
+  own -> entities [style=dashed]
 
-  gene -> af [style=dashed, color="#2e75b6", constraint=false,
-              label=" which isoform?", fontcolor="#2e75b6"]
-  gene -> match [label=" protein sequence", color="#2e75b6", fontcolor="#2e75b6"]
-  chains -> match [color="#548235"]
+  translate -> match [label=" protein sequence "]
+  entities -> match [label=" entity sequences "]
+  match -> check [style=dashed]
+  match -> sifts [style=dashed]
+  match -> mapper [label=" alignment "]
+  sifts -> mapper [style=dashed label=" trimmed "]
+  mapper -> result [label=" structure positions "]
+  g2p -> result [label=" p2gCodon "]
 
-  match -> check  [style=dashed, arrowhead=none]
-  match -> lookup [label=" the alignment"]
-  match -> sifts  [style=dashed]
-  sifts -> lookup [style=dashed, label=" trimmed alignment"]
-
-  lookup -> result
-  table  -> result [color="#2e75b6", label=" protein position\n↔ genome", fontcolor="#2e75b6"]
-
-  {rank=same; gene; uniprot; own}
+  {rank=same; transcript; uniprot; own}
   {rank=same; check; sifts}
+
+  subgraph cluster_legend {
+    label="Legend"
+    labelloc="t"
+    fontname="Helvetica"
+    fontsize=10
+    fontcolor="#57606a"
+    color="#d0d7de"
+    style="rounded"
+    margin=10
+    node [shape=box style="filled,rounded" fontsize=9 margin="0.1,0.04"]
+    l1 [label="network" fillcolor="#dafbe1" color="#1a7f37"]
+    l2 [label="alignment" fillcolor="#ffd8b5" color="#bc4c00"]
+    l3 [label="host app or g2p_mapper" fillcolor="#fbefff" color="#8250df"]
+    l4 [label="optional or advisory" style="filled,rounded,dashed"]
+    l1 -> l2 -> l3 -> l4 [style=invis]
+  }
 }
