@@ -6,42 +6,38 @@ digraph pipeline {
 
   node [
     fontname = "Helvetica,Arial,sans-serif"
-    fontsize = 11
+    fontsize = 12
     fontcolor = "#1f2328"
     color = "#8c959f"
     style = "filled"
     fillcolor = "#f6f8fa"
     shape = box
-    margin = "0.18,0.10"
+    margin = "0.2,0.12"
   ]
   edge [
     fontname = "Helvetica,Arial,sans-serif"
-    fontsize = 9
+    fontsize = 10
     fontcolor = "#57606a"
     color = "#8c959f"
     arrowsize = 0.7
   ]
 
-  gene [label = "gene / transcript", fillcolor = "#ddf4ff"]
-  isoforms [label = "rank isoforms\nclassifyIsoforms · selectBestTranscript"]
-  find [label = "find a structure\nfetchAlphaFoldModels · fetchExperimentalStructures\npdbeBestStructures · searchUniProtEntries"]
-  load [label = "load the file in Mol*\n(host app; format sniffed from content)", fillcolor = "#fff8c5"]
-  entities [label = "read polymer entities\nextractEntities"]
-  choose [label = "choose the transcript's entity\nchooseMappedEntity\nidentical residues / shorter sequence"]
-  align [label = "align transcript to entity\nrunLocalAlignment (BLOSUM62, affine gaps)"]
-  sifts [label = "SIFTS numbering (optional)\nfetchUniProtStructureMappings\nmakeUniProtPositionMap"]
-  mapper [label = "build coordinate maps\nmakeCoordinateMapper", fillcolor = "#dafbe1"]
-  use [label = "highlight, hover, navigate", fillcolor = "#dafbe1"]
+  gene [label = "A gene on the genome", fillcolor = "#ddf4ff"]
+  protein [label = "Its protein, spelled out\nas a string of amino acids"]
+  find [label = "Look up 3D structures\nof that protein"]
+  chain [label = "Pick the chain in the structure\nthat is this protein"]
+  match [label = "Line the two sequences up\nresidue by residue"]
+  official [label = "Cross-check against the\nofficial residue numbering\n(optional)"]
+  maps [label = "Result: a lookup table\nfrom any position to its partner", fillcolor = "#dafbe1"]
+  use [label = "Click a residue in 3D,\nsee the DNA; click the DNA,\nsee the residue", fillcolor = "#dafbe1"]
 
-  gene -> isoforms
+  gene -> protein [label = "g2p_mapper\ngenome ↔ protein"]
   gene -> find
-  find -> load
-  load -> entities
-  isoforms -> choose [label = "transcript protein"]
-  entities -> choose [label = "candidates"]
-  choose -> align [label = "winner"]
-  align -> mapper
-  entities -> sifts [style = dashed]
-  sifts -> mapper [style = dashed, label = "authoritative\nUniProt positions"]
-  mapper -> use
+  protein -> match
+  find -> chain
+  chain -> match
+  match -> maps
+  chain -> official [style = dashed]
+  official -> maps [style = dashed]
+  maps -> use
 }

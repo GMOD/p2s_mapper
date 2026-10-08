@@ -10,11 +10,19 @@ Map a transcript's translation onto a protein structure.
 - **Apply SIFTS** residue numbering
 - **Find structures** through AlphaFold, 3D-Beacons, PDBe and UniProt
 
+## Works with g2p_mapper
+
+p2s_mapper covers **protein ↔ structure**. The other half, **genome ↔ protein**,
+is [g2p_mapper](https://github.com/GMOD/g2p_mapper): it turns a transcript's CDS
+into per-codon genome positions, on either strand and across exon boundaries. It
+is p2s_mapper's only runtime dependency, and chaining the two takes you from a
+genome coordinate to a residue in 3D and back.
+
 Extracted from
 [jbrowse-plugin-protein3d](https://github.com/GMOD/jbrowse-plugin-protein3d),
 where we made the measurements behind the scoring rules. The package has no
 React, JBrowse or Mol\* dependency: a loaded Mol\* model reaches it through
-narrow structural interfaces, and `g2p_mapper` is the only runtime dependency.
+narrow structural interfaces.
 
 ## Install
 
@@ -24,10 +32,12 @@ npm install p2s_mapper
 
 ## How it fits together
 
-![From transcript to coordinate maps](docs/img/pipeline.svg)
+![From a gene to a clickable structure](docs/img/pipeline.svg)
 
 ## Docs
 
+- [faq.md](docs/faq.md) — can I trust the mapping? What the package checks, and
+  what it leaves to you
 - [pipeline.md](docs/pipeline.md) — the flow above, step by step, and why chain
   choice divides by the shorter sequence
 - [coordinates.md](docs/coordinates.md) — the four numberings of a residue and

@@ -1,30 +1,37 @@
 # Pipeline
 
-How a transcript ends up mapped onto a structure. The solid path is the core;
-the dashed SIFTS path replaces the local alignment's UniProt positions with the
-authoritative ones when PDBe has them.
+How a gene ends up mapped onto a 3D structure. The solid path is the core. The
+dashed path cross-checks against PDBe's official numbering (SIFTS) when it has
+one.
 
-![From transcript to coordinate maps](img/pipeline.svg)
+![From a gene to a clickable structure](img/pipeline.svg)
 
 The graph source is [`img/pipeline.dot`](img/pipeline.dot); regenerate with
 `dot -Tsvg docs/img/pipeline.dot -o docs/img/pipeline.svg`.
 
-## Steps
+## Steps, with the functions behind each box
 
-1. **Rank isoforms.** `classifyIsoforms`, `selectBestTranscript` and
-   `pickStructureSequence` rank plain `{ id, seq }` records against a chain.
-2. **Find a structure.** AlphaFold, 3D-Beacons and PDBe each answer a different
-   question; see [api.md](api.md#structure-sources).
-3. **Load it.** The host app parses the file with Mol\*. This package never
-   imports Mol\*; `extractEntities` reads the loaded model through a narrow
-   structural interface.
-4. **Choose the entity.** `chooseMappedEntity` aligns the transcript against
-   each polymer entity and picks the one with the highest identical residues
-   over the **shorter** sequence.
-5. **Align.** Smith-Waterman or Needleman-Wunsch over BLOSUM62 with affine gaps.
-   The alignment has two rows: row 0 is the transcript, row 1 is the structure.
-6. **Build maps.** `makeCoordinateMapper` builds every conversion once from the
-   alignment, branded by [coordinate space](coordinates.md).
+1. **A gene, spelled as a protein.** Genome ↔ protein positions belong to
+   [g2p_mapper](https://github.com/GMOD/g2p_mapper); this package starts from
+   the protein sequence it produces. When a gene has several isoforms,
+   `classifyIsoforms`, `selectBestTranscript` and `pickStructureSequence` rank
+   them against a chain.
+2. **Look up structures.** AlphaFold, 3D-Beacons and PDBe each answer a
+   different question; see [api.md](api.md#structure-sources).
+3. **Pick the chain.** The host app loads the file in Mol\*. A structure often
+   holds several molecules, so `chooseMappedEntity` scores each one and keeps
+   the one that is the gene's protein. This package never imports Mol\*;
+   `extractEntities` reads the loaded model through a narrow interface.
+4. **Line the sequences up.** `runLocalAlignment` runs Smith-Waterman or
+   Needleman-Wunsch over BLOSUM62 with affine gaps. The alignment has two rows:
+   row 0 is the transcript, row 1 is the structure.
+5. **Cross-check (optional).** `fetchUniProtStructureMappings` and
+   `makeUniProtPositionMap` bring in PDBe's SIFTS numbering for UniProt
+   positions.
+6. **Build the lookup tables.** `makeCoordinateMapper` builds every conversion
+   once from the alignment, branded by [coordinate space](coordinates.md).
+
+Worried the result is wrong? See the [FAQ](faq.md).
 
 ## Why the shorter sequence
 
