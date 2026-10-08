@@ -11,7 +11,11 @@ const DB_ID_PATTERNS: { db: DbType; pattern: RegExp; label: string }[] = [
   { db: 'ensembl', pattern: /^ENS[A-Z]*P\d+/i, label: 'Ensembl protein' },
   { db: 'refseq', pattern: /^[NX]M_\d+/i, label: 'RefSeq mRNA' },
   { db: 'refseq', pattern: /^[NX]R_\d+/i, label: 'RefSeq ncRNA' },
-  { db: 'refseq', pattern: /^[NX]P_\d+/i, label: 'RefSeq protein' },
+  // YP_ and AP_ are the proteins of organelle, viral and prokaryotic genomes.
+  // WP_ is left out on purpose: it names one sequence shared by every strain
+  // and species that encodes it, so its cross-references are a list of
+  // organisms rather than an entry (E. coli's WP_000135199 has six reviewed).
+  { db: 'refseq', pattern: /^[NXYA]P_\d+/i, label: 'RefSeq protein' },
   { db: 'ccds', pattern: /^CCDS\d+/i, label: 'CCDS' },
   { db: 'hgnc', pattern: /^HGNC:\d+/i, label: 'HGNC' },
 ]

@@ -93,6 +93,19 @@ describe('searchUniProtEntries', () => {
     ])
   })
 
+  it('keeps the empty answer when the descendant search fails', async () => {
+    const logged = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    stubUniProt(url => ({ ok: !queryOf(url).includes('taxonomy_id') }))
+    const result = await searchUniProtEntries({
+      geneName: 'cdc2',
+      organismId: 4896,
+    })
+    expect(result).toEqual({ entries: [], attemptedCount: 1, failedCount: 0 })
+    expect(logged).toHaveBeenCalledOnce()
+  })
+
   it('does not ask the descendants when the taxon answers', async () => {
     const calls = stubUniProt(() => ({
       ok: true,
