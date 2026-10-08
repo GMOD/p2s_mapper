@@ -18,7 +18,7 @@ digraph p2smapper {
   gene      [label="a gene\nexons and strand" fillcolor="#ddf4ff" color="#0969da"]
   protein   [label="its protein sequence\nand genome ↔ protein positions\n(g2p_mapper)" fillcolor="#fbefff" color="#8250df"]
   structure [label="3D structures of that protein\nAlphaFold or PDB" fillcolor="#dafbe1" color="#1a7f37"]
-  chain     [label="pick the chain that is this protein\nchooseMappedEntity" fillcolor="#ffd8b5" color="#bc4c00"]
+  chain     [label="pick the chain that best matches\nexact match, else best alignment\nchooseMappedEntity" fillcolor="#ffd8b5" color="#bc4c00"]
   lookup    [label="residue lookup\nmakeCoordinateMapper" fillcolor="#ffd8b5" color="#bc4c00"]
   result    [label="click a residue in 3D → its codon on the genome\nclick the genome → its residue in 3D" fillcolor="#ddf4ff" color="#0969da"]
 

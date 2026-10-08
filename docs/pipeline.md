@@ -36,13 +36,23 @@ app wires them together. The chart shows the order their dependencies force.
 
 **Where they meet**
 
-5. **Match the chain.** `chooseMappedEntity` aligns the gene's protein against
-   every chain and keeps the best match. The same call returns the alignment, so
-   there is no separate "align" step. The alignment is Smith-Waterman or
-   Needleman-Wunsch over BLOSUM62 with affine gaps; row 0 is the transcript, row
-   1 is the structure.
+5. **Match the chain.** `chooseMappedEntity` picks the chain that best matches
+   the gene's protein, in two tiers:
+   - A chain whose sequence is **identical** to the protein wins outright, with
+     no alignment search.
+   - Otherwise it aligns the protein against every protein chain and keeps the
+     highest score: identical residues over the shorter sequence, plus a
+     5-residue pseudocount. DNA and RNA chains are skipped.
+
+   The best match always wins, even a poor one, so "best" is not "confirmed".
+   Step 6 judges that. The same call returns the winning alignment, so there is
+   no separate "align" step. The alignment is Smith-Waterman or Needleman-Wunsch
+   over BLOSUM62 with affine gaps; row 0 is the transcript, row 1 is the
+   structure.
+
 6. **Check the match (advisory).** `alignmentQuality` and `isLowSimilarity` flag
-   a weak match. Nothing blocks on it, so the host decides what to show.
+   a weak match, the only place a poor best match is caught. Nothing blocks on
+   it, so the host decides what to show.
 7. **Trim with SIFTS (optional, PDB only).** `fusionPartnerPositions` finds
    residues PDBe assigns to a fused partner protein, and
    `unmapStructurePositions` removes them. `makeUniProtPositionMap` places

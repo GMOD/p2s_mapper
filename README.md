@@ -6,7 +6,7 @@ Map a transcript's translation onto a protein structure.
   Needleman-Wunsch, BLOSUM62)
 - **Convert coordinates** both ways between transcript, alignment, structure,
   Mol\* and UniProt numbering
-- **Choose the chain** that is the gene's product
+- **Choose the chain** that best matches the gene's protein
 - **Use SIFTS** to place UniProt annotations and drop fusion-partner residues
 - **Find structures** through AlphaFold, 3D-Beacons, PDBe and UniProt
 
