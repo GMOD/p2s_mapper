@@ -1,90 +1,32 @@
 // Source for docs/img/pipeline.svg, which docs/pipeline.md and the README embed.
 // Regenerate with: dot -Tsvg docs/img/pipeline.dot -o docs/img/pipeline.svg
 //
-// Main path only: how a transcript and a structure meet at chooseMappedEntity.
-// Step numbers match the list in docs/pipeline.md.
+// Deliberately the MAIN PATH only. The quality check, the SIFTS trim and the
+// choice of structure source are in docs/pipeline.md instead: a diagram that
+// shows every branch stops being the thing you look at first.
 //
-// SYNC: palette, legend and font sizes follow ~/src/gmod/bam-js/docs/img/dataflow.dot
-// (entry/exit blue, I/O green, compute orange, outside this package purple).
+// SYNC: palette follows ~/src/gmod/bam-js/docs/img/dataflow.dot.
 digraph p2smapper {
   rankdir=TB
-  newrank=true
   bgcolor="white"
-  nodesep=0.3
-  ranksep=0.4
+  nodesep=0.5
+  ranksep=0.45
   node [shape=box style="filled,rounded" fillcolor="#f6f8fa" color="#57606a"
-        fontname="Helvetica" fontsize=10 margin="0.14,0.07"]
-  edge [color="#57606a" fontname="Helvetica" fontsize=9]
+        fontname="Helvetica" fontsize=11 margin="0.18,0.09"]
+  edge [color="#57606a" fontname="Helvetica" fontsize=10]
 
-  subgraph cluster_gene {
-    label="Gene side"
-    labelloc="t"
-    fontname="Helvetica"
-    fontsize=10
-    fontcolor="#57606a"
-    color="#d0d7de"
-    style="rounded,dashed"
-    transcript [label="transcript\nCDS exons, strand, phase" fillcolor="#ddf4ff" color="#0969da"]
-    translate  [label="1. translate the CDS\ntranscript protein sequence" fillcolor="#fbefff" color="#8250df"]
-    g2p        [label="1. genomeToTranscriptSeqMapping\ngenome position ↔ protein position" fillcolor="#fbefff" color="#8250df"]
-  }
+  gene      [label="a gene\nexons and strand" fillcolor="#ddf4ff" color="#0969da"]
+  protein   [label="its protein sequence\nand genome ↔ protein positions\n(g2p_mapper)" fillcolor="#fbefff" color="#8250df"]
+  structure [label="3D structures of that protein\nAlphaFold or PDB" fillcolor="#dafbe1" color="#1a7f37"]
+  chain     [label="pick the chain that is this protein\nchooseMappedEntity" fillcolor="#ffd8b5" color="#bc4c00"]
+  lookup    [label="residue lookup\nmakeCoordinateMapper" fillcolor="#ffd8b5" color="#bc4c00"]
+  result    [label="click a residue in 3D → its codon on the genome\nclick the genome → its residue in 3D" fillcolor="#ddf4ff" color="#0969da"]
 
-  subgraph cluster_struct {
-    label="Structure side"
-    labelloc="t"
-    fontname="Helvetica"
-    fontsize=10
-    fontcolor="#57606a"
-    color="#d0d7de"
-    style="rounded,dashed"
-    uniprot [label="2. searchUniProtEntries\nUniProt accession" fillcolor="#dafbe1" color="#1a7f37"]
-    af      [label="3. AlphaFold: fetchAlphaFoldModels\npickAlphaFoldModel" fillcolor="#dafbe1" color="#1a7f37"]
-    pdb     [label="3. or PDB: fetchExperimentalStructures\nPDBe best structures" fillcolor="#dafbe1" color="#1a7f37"]
-    own     [label="3. or caller-supplied\nPDB id, URL or file" style="filled,rounded,dashed"]
-    entities [label="4. extractEntities\nMol* model → polymer entity sequences"]
-  }
-
-  match  [label="5. chooseMappedEntity\nalign the transcript to each entity,\nkeep the best explainedFraction" fillcolor="#ffd8b5" color="#bc4c00"]
-  check  [label="6. alignmentQuality · isLowSimilarity\nflags a chance match, never blocks" style="filled,rounded,dashed" fillcolor="#ffd8b5" color="#bc4c00"]
-  sifts  [label="7. PDB entries only\nfetchUniProtStructureMappings\nfusionPartnerPositions → unmapStructurePositions" style="filled,rounded,dashed" fillcolor="#dafbe1" color="#1a7f37"]
-  mapper [label="8. makeCoordinateMapper\ntranscript position ↔ structure position" fillcolor="#ffd8b5" color="#bc4c00"]
-  result [label="toLabelSeqIds · codonGenomeSpan\nMol* residue ↔ genome span" fillcolor="#ddf4ff" color="#0969da"]
-
-  transcript -> translate
-  transcript -> g2p
-  transcript -> uniprot [style=invis]
-  uniprot -> af
-  uniprot -> pdb
-  af -> entities
-  pdb -> entities
-  own -> entities [style=dashed]
-
-  translate -> match [label=" protein sequence "]
-  entities -> match [label=" entity sequences "]
-  match -> check [style=dashed]
-  match -> sifts [style=dashed]
-  match -> mapper [label=" alignment "]
-  sifts -> mapper [style=dashed label=" trimmed "]
-  mapper -> result [label=" structure positions "]
-  g2p -> result [label=" p2gCodon "]
-
-  {rank=same; transcript; uniprot; own}
-  {rank=same; check; sifts}
-
-  subgraph cluster_legend {
-    label="Legend"
-    labelloc="t"
-    fontname="Helvetica"
-    fontsize=10
-    fontcolor="#57606a"
-    color="#d0d7de"
-    style="rounded"
-    margin=10
-    node [shape=box style="filled,rounded" fontsize=9 margin="0.1,0.04"]
-    l1 [label="network" fillcolor="#dafbe1" color="#1a7f37"]
-    l2 [label="alignment" fillcolor="#ffd8b5" color="#bc4c00"]
-    l3 [label="host app or g2p_mapper" fillcolor="#fbefff" color="#8250df"]
-    l4 [label="optional or advisory" style="filled,rounded,dashed"]
-    l1 -> l2 -> l3 -> l4 [style=invis]
-  }
+  gene -> protein
+  gene -> structure [label=" via UniProt "]
+  protein -> chain
+  structure -> chain
+  chain -> lookup [label=" alignment "]
+  lookup -> result
+  protein -> result [label=" genome positions "]
 }

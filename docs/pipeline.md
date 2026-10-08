@@ -1,8 +1,10 @@
 # Pipeline
 
-How a gene ends up mapped onto a 3D structure. The chart has two sides that run
-independently and meet at the chain match. Dashed boxes are optional or
-advisory.
+How a gene ends up mapped onto a 3D structure. The chart shows the main path:
+the gene's protein and a 3D structure are found independently, meet at the chain
+match, and the alignment becomes a lookup in both directions. The steps below
+add what the chart leaves out: the choice of structure source, the quality check
+and the optional SIFTS trim.
 
 ![From a gene on the genome to a residue in 3D, and back](img/pipeline.svg)
 
@@ -12,7 +14,7 @@ The graph source is [`img/pipeline.dot`](img/pipeline.dot); regenerate with
 p2s_mapper is a toolkit of separate functions with no orchestrator, so the host
 app wires them together. The chart shows the order their dependencies force.
 
-## Steps, with the functions behind each box
+## Steps
 
 **Gene side**
 
