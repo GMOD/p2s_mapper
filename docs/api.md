@@ -31,6 +31,16 @@ index.
 - `pairwiseAlignmentProblem`, `pairwiseAlignmentSequenceProblem`
 - `mappedStructureIdentity`, `unmapStructurePositions`
 
+**Two isoforms of one protein**
+
+- `sharedIsoformResidues`, `sharedResidueMap`, `keepSharedStretches`
+
+A residue carries from one isoform to another only inside a stretch the two
+spell letter for letter, so a mutually exclusive exon (PKM's 9 and 10) maps
+nothing although it aligns column for column. `keepSharedStretches` applies that
+to a transcript aligned to another isoform's entry; don't apply it to a
+structure, where a mismatch is usually a construct's point mutation.
+
 **Quality**
 
 - `alignmentQuality`, `isLowSimilarity`
@@ -104,7 +114,9 @@ The authoritative UniProt ↔ structure alignment.
   AlphaFold's length cap has no F1 model at all, and the model version moves.
 - **3D-Beacons**: `fetchExperimentalStructures`, `parseExperimentalStructures`.
   PDBe entries only, because SASBDB's scattering fits file under the same
-  category with near-full coverage and no residue mapping.
+  category with near-full coverage and no residue mapping. The fetch asks the
+  unfiltered summary and retries once: the `?provider=pdbe` form 404s
+  intermittently.
 - **PDBe**: `pdbeBestStructuresUrl`, `parseBestStructures`, `isPdbId`,
   `pdbeEntryMoleculesUrl`, `parseEntryMolecules`
 - **UniProt search**: `searchUniProtEntries`, `buildGeneNameQuery`,

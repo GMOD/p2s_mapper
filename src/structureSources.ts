@@ -21,8 +21,11 @@ export interface ExperimentalStructure {
   coverage: number
 }
 
+// Unfiltered: the `?provider=pdbe` form answered BRAF, HBB and BRCA2 with a 404
+// about one time in three (2026-10-09), and the parser keeps PDBe's entries
+// anyway.
 export function beaconsSummaryUrl(uniprotId: string) {
-  return `https://www.ebi.ac.uk/pdbe/pdbe-kb/3dbeacons/api/uniprot/summary/${encodeURIComponent(uniprotId)}.json?provider=pdbe`
+  return `https://www.ebi.ac.uk/pdbe/pdbe-kb/3dbeacons/api/uniprot/summary/${encodeURIComponent(uniprotId)}.json`
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -94,8 +97,16 @@ export async function fetchExperimentalStructures(
   uniprotId: string,
   opts?: FetchOptions,
 ): Promise<ExperimentalStructure[]> {
-  const res = await rawfetch(beaconsSummaryUrl(uniprotId), opts).catch(
-    () => undefined,
-  )
-  return res?.ok ? parseExperimentalStructures(await res.json()) : []
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await rawfetch(beaconsSummaryUrl(uniprotId), opts).catch(
+      () => undefined,
+    )
+    if (res?.ok) {
+      return parseExperimentalStructures(await res.json())
+    }
+    if (res?.status === 404 || opts?.signal?.aborted) {
+      return []
+    }
+  }
+  return []
 }

@@ -3,6 +3,7 @@ export * from './types.ts'
 export * from './mappings.ts'
 export * from './pairwiseAlignment.ts'
 export * from './alignmentQuality.ts'
+export * from './sharedStretches.ts'
 
 // Coordinates
 export * from './coordinates.ts'
