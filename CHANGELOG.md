@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/GMOD/p2s_mapper/compare/v1.3.0...v1.4.0) (2026-10-10)
+
+### Features
+
+- Search UniProt by NCBI GeneID; keep AlphaFold's model id and mean pLDDT ([50907c1](https://github.com/GMOD/p2s_mapper/commit/50907c167657735a8d8c6fd5b9c3408a51a15fa3))
+
 ## [1.3.0](https://github.com/GMOD/p2s_mapper/compare/v1.2.2...v1.3.0) (2026-10-10)
 
 ### Documentation
