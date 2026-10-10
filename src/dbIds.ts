@@ -3,7 +3,7 @@
 // keyword, the regex (Ensembl patterns cover human ENS, mouse ENSMUS, zebrafish
 // ENSDAR, etc.), and a human-readable label. Recognition, label rendering, and
 // xref-query building all derive from this list, so a new ID type is one entry.
-type DbType = 'ensembl' | 'refseq' | 'ccds' | 'hgnc'
+type DbType = 'ensembl' | 'refseq' | 'ccds' | 'hgnc' | 'geneid'
 
 const DB_ID_PATTERNS: { db: DbType; pattern: RegExp; label: string }[] = [
   { db: 'ensembl', pattern: /^ENS[A-Z]*G\d+/i, label: 'Ensembl gene' },
@@ -18,6 +18,10 @@ const DB_ID_PATTERNS: { db: DbType; pattern: RegExp; label: string }[] = [
   { db: 'refseq', pattern: /^[NXYA]P_\d+/i, label: 'RefSeq protein' },
   { db: 'ccds', pattern: /^CCDS\d+/i, label: 'CCDS' },
   { db: 'hgnc', pattern: /^HGNC:\d+/i, label: 'HGNC' },
+  // NCBI's GFFs carry `Dbxref=GeneID:7157`, and UniProt keeps the GeneID
+  // cross-reference for every organism NCBI annotates, where a symbol search
+  // needs a taxon and misses a TrEMBL-only gene.
+  { db: 'geneid', pattern: /^GeneID:\d+$/i, label: 'NCBI Gene' },
 ]
 
 export function matchDbIdPattern(id: string) {
@@ -41,7 +45,7 @@ export function getDbIdLabel(id: string) {
 export function buildUniProtXrefQuery(id: string) {
   const match = matchDbIdPattern(id)
   return match
-    ? `xref:${match.db}-${match.db === 'hgnc' ? id.replace('HGNC:', '') : id}`
+    ? `xref:${match.db}-${match.db === 'hgnc' || match.db === 'geneid' ? id.replace(/^[^:]+:/, '') : id}`
     : undefined
 }
 

@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import { buildUniProtXrefQuery, isRecognizedDatabaseId } from '../src/index.ts'
 
+describe('NCBI Gene ids', () => {
+  it('searches the GeneID cross-reference NCBI GFFs carry', () => {
+    expect(buildUniProtXrefQuery('GeneID:7157')).toBe('xref:geneid-7157')
+    expect(isRecognizedDatabaseId('GeneID:7157x')).toBe(false)
+  })
+})
+
 describe('RefSeq protein accessions', () => {
   it('recognises the proteins of one genome, organelle and viral included', () => {
     for (const id of [

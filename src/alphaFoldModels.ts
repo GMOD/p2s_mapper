@@ -6,15 +6,21 @@ import { stripStopCodon } from './stripStopCodon.ts'
 export interface AlphaFoldModel {
   /** UniProt accession, with an isoform suffix on an isoform model */
   accession: string
+  /** AlphaFold DB's id for the model, e.g. AF-P04637-F1 */
+  entity?: string
   url: string
   confidenceUrl?: string
+  /** mean per-residue confidence (pLDDT), 0-100 */
+  meanPlddt?: number
   sequence: string
 }
 
 interface PredictionEntry {
   uniprotAccession?: unknown
+  modelEntityId?: unknown
   cifUrl?: unknown
   plddtDocUrl?: unknown
+  globalMetricValue?: unknown
   sequence?: unknown
 }
 
@@ -31,9 +37,15 @@ export function parseAlphaFoldModels(json: unknown): AlphaFoldModel[] {
       ? [
           {
             accession: e.uniprotAccession,
+            entity:
+              typeof e.modelEntityId === 'string' ? e.modelEntityId : undefined,
             url: e.cifUrl,
             confidenceUrl:
               typeof e.plddtDocUrl === 'string' ? e.plddtDocUrl : undefined,
+            meanPlddt:
+              typeof e.globalMetricValue === 'number'
+                ? e.globalMetricValue
+                : undefined,
             sequence: e.sequence,
           },
         ]

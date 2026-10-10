@@ -16,8 +16,10 @@ test('reads the prediction API entries it can open, skipping the rest', () => {
     parseAlphaFoldModels([
       {
         uniprotAccession: 'P04637-2',
+        modelEntityId: 'AF-P04637-2-F1',
         cifUrl: 'https://alphafold.ebi.ac.uk/files/AF-P04637-2-F1-model_v6.cif',
         plddtDocUrl: 'https://alphafold.ebi.ac.uk/files/c.json',
+        globalMetricValue: 75.1,
         sequence: 'MEEP',
       },
       { uniprotAccession: 'P1' },
@@ -25,8 +27,10 @@ test('reads the prediction API entries it can open, skipping the rest', () => {
   ).toEqual([
     {
       accession: 'P04637-2',
+      entity: 'AF-P04637-2-F1',
       url: 'https://alphafold.ebi.ac.uk/files/AF-P04637-2-F1-model_v6.cif',
       confidenceUrl: 'https://alphafold.ebi.ac.uk/files/c.json',
+      meanPlddt: 75.1,
       sequence: 'MEEP',
     },
   ])
