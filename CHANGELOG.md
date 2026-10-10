@@ -1,3 +1,19 @@
+## [1.3.0](https://github.com/GMOD/p2s_mapper/compare/v1.2.2...v1.3.0) (2026-10-10)
+
+### Documentation
+
+- Restructure README into bullets, add docs/ with pipeline and coordinate diagrams ([efa26d2](https://github.com/GMOD/p2s_mapper/commit/efa26d26956e03e79bfaf47f9ae1fb257f3f2869))
+- Add FAQ on mapping trust, link g2p_mapper, plain-language flowchart ([c94c2d4](https://github.com/GMOD/p2s_mapper/commit/c94c2d4f1e49c3f42a4397b55258b1e1bde8243c))
+- Split the pipeline flowchart into two lanes that meet at chain choice ([ca19a3c](https://github.com/GMOD/p2s_mapper/commit/ca19a3c462c7ea8bcf409377a4736cf07be87119))
+- Replace pipeline flowchart with the two-side version, and correct SIFTS's role ([aa36a8e](https://github.com/GMOD/p2s_mapper/commit/aa36a8e3d670815b4eaacc68749e92f31cafc3bc))
+- Restyle the pipeline flowchart after the other repos' dataflow charts ([976d736](https://github.com/GMOD/p2s_mapper/commit/976d7367f2adc12a12bfa2f202a2a1c9e4c8ab69))
+- Cut the pipeline flowchart to the main path ([631f6af](https://github.com/GMOD/p2s_mapper/commit/631f6afb0abe83f0af5193cd88bde3cb9464bce2))
+- Say what 'best match' means for chain choice ([94d7b76](https://github.com/GMOD/p2s_mapper/commit/94d7b76e3122b94266ebbedb6de892405d6315e4))
+
+### Features
+
+- Keep only shared stretches between two isoforms; ask 3D-Beacons unfiltered ([1a9f711](https://github.com/GMOD/p2s_mapper/commit/1a9f7111180047870f3905e0581e6e1a1de52020))
+
 ## [1.2.2](https://github.com/GMOD/p2s_mapper/compare/v1.2.1...v1.2.2) (2026-10-08)
 
 ### Bug Fixes
