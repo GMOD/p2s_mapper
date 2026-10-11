@@ -1,19 +1,17 @@
 # p2s_mapper
 
-Find which residue of a 3D protein structure each amino acid of a transcript
-lands on, and back.
+Lines up a protein sequence with its 3D structure, residue by residue.
 
-Give it a transcript's translation and a structure, an AlphaFold model or a PDB
-entry. p2s_mapper picks the chain that is the gene's protein, aligns the two,
-and builds the lookups between transcript positions, structure positions and the
-residue ids a viewer such as Mol\* uses. It also finds structures for a gene,
-judges whether a match is real, and uses a PDB entry's UniProt alignment to
-place UniProt annotations and drop the residues of a fusion partner.
-
-Pair it with [g2p_mapper](https://github.com/GMOD/g2p_mapper), which maps genome
-positions to protein positions, to go from a genome coordinate to a residue in
-3D. The package has no React, JBrowse or Mol\* dependency; it came out of
-[jbrowse-plugin-protein3d](https://github.com/GMOD/jbrowse-plugin-protein3d).
+- **In:** a protein sequence, and an AlphaFold or PDB structure
+- **Out:** which 3D residue each amino acid is, and back
+- Picks the right chain and warns on a poor match
+- Finds structures for a gene
+- Places UniProt annotations on a PDB entry
+- With [g2p_mapper](https://github.com/GMOD/g2p_mapper): genome position ↔ 3D
+  residue
+- No React, JBrowse or Mol\* dependency
+- Used by
+  [jbrowse-plugin-protein3d](https://github.com/GMOD/jbrowse-plugin-protein3d)
 
 ## Install
 
