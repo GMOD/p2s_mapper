@@ -4,18 +4,18 @@ Every export, grouped by job, with its signature and an example. For how the
 pieces fit together, see [pipeline.md](pipeline.md); for the numbering rules,
 see [coordinates.md](coordinates.md).
 
-Conventions that hold everywhere:
+Conventions:
 
-- Positions are **0-based** unless a name or comment says otherwise. UniProt
-  positions and author residue numbers are the exceptions, and are 1-based.
+- Positions are **0-based**. UniProt positions and author residue numbers are
+  1-based.
 - Ranges are `{ start, end }`. A range of positions is half-open; a range of
   residue numbers (UniProt, author, "residues 102-292") is inclusive.
 - A `PairwiseAlignment` has **row 0 = transcript, row 1 = structure**.
 - Every network function takes an optional `FetchOptions` last, see
   [Fetch helpers](#fetch-helpers).
 
-The signature blocks come from the compiler: `pnpm docs:api` rewrites each one
-between its `GENERATED` markers, and `pnpm test` fails when one is stale.
+`pnpm docs:api` generates each signature block from the compiler, between its
+`GENERATED` markers, and `pnpm test` fails when one is out of date.
 
 - [Alignment](#alignment)
 - [Coordinates](#coordinates)
@@ -88,19 +88,18 @@ const MAX_ALIGNMENT_CELLS: 40000000
 
 - Both aligners score with BLOSUM62 and affine gaps: open -10, extend -0.5, the
   EMBOSS defaults.
-- `runLocalAlignment` takes the transcript first and the structure second, which
-  is what puts them in rows 0 and 1. Despite the name it runs either algorithm.
-- Both rows always spell their whole sequences. Smith-Waterman leaves the
-  residues outside its local alignment hanging off the ends against gaps, as in
-  the `smithWaterman` line above, so every coordinate map works on a local
-  alignment too.
+- `runLocalAlignment` puts its first sequence in row 0 and its second in row 1,
+  so pass the transcript first. It runs either algorithm, despite the name.
+- Each row contains its whole sequence. Smith-Waterman places the residues
+  outside its local alignment at the ends, opposite gaps, as the `smithWaterman`
+  line above shows, so every coordinate map works on a local alignment too.
 - The consensus row marks identities with `|`, positive BLOSUM62 pairs with `:`
   and everything else with a space.
 - The DP table is capped at `MAX_ALIGNMENT_CELLS` (about 40 MB and a second of
   work). Past it the aligners throw; check `alignmentTooLarge` first when there
   are several candidates and some may be huge.
-- `selfScore` is the score of a sequence against itself without gaps, the score
-  an exact match reports.
+- `selfScore` is the score of a sequence against itself without gaps, which is
+  the score `alignTranscriptToEntity` gives an exact match.
 
 ### Algorithm names
 
@@ -141,9 +140,9 @@ and falls back to Smith-Waterman.
 
 ### The alignment object
 
-**The row order is a contract**: row 0 is the transcript, row 1 is the
-structure. Nothing in the type enforces it, and swapping the rows silently
-inverts every map, so read them through the accessors rather than by index.
+Row 0 is the transcript and row 1 is the structure. The type cannot enforce the
+order, and swapped rows invert every map without an error, so read the rows with
+`transcriptAlignedSeq` and `structureAlignedSeq`.
 
 ```ts
 import {
@@ -199,11 +198,12 @@ function pairwiseAlignmentSequenceProblem(
 
 <!-- /GENERATED -->
 
-Run both checks on an alignment from outside the package. The first catches
-ragged rows; the second catches rows that are not the transcript and chain being
-mapped, such as an alignment made against another isoform, which would shift
-every position after the first difference. Each returns a message to show, or
-`undefined`.
+Run both checks on an alignment from outside the package.
+`pairwiseAlignmentProblem` rejects rows of different lengths.
+`pairwiseAlignmentSequenceProblem` rejects rows that are not the transcript and
+chain being mapped, such as an alignment made against another isoform, which
+would shift every position after the first difference. Each returns a message to
+show, or `undefined`.
 
 ### Unmapping residues
 
@@ -237,18 +237,19 @@ function unmapStructurePositions(
 <!-- /GENERATED -->
 
 - `mappedStructureIdentity` lists every mapped structure position and whether
-  its pair is identical, so a host can flag the mismatches.
-- `unmapStructurePositions` takes positions out of their columns, so both rows
-  still spell their sequences and those residues map to nothing. It returns the
-  same object when nothing changes. Fusion-partner trimming and
-  `keepSharedStretches` both work through it.
+  the transcript residue opposite it is identical, so a host can flag the
+  mismatches.
+- `unmapStructurePositions` moves the given structure positions out of their
+  columns. Each row still contains its whole sequence, and those residues map to
+  nothing. It returns the same object when there is nothing to move. Use it on
+  the result of `fusionPartnerPositions`; `keepSharedStretches` calls it too.
 
 ### Two isoforms of one protein
 
 ```ts
 import { sharedIsoformResidues } from 'p2s_mapper'
 
-// the second isoform carries a four-residue insert after residue 10
+// the second isoform has a four-residue insert after residue 10
 const shared = sharedIsoformResidues(
   'MKTAYIAKQRQISFVKSHFSRQ',
   'MKTAYIAKQRDEFGHISFVKSHFSRQ',
@@ -270,11 +271,12 @@ function keepSharedStretches(pa: PairwiseAlignment): PairwiseAlignment
 
 <!-- /GENERATED -->
 
-A residue carries from one isoform to the other only inside a stretch the two
-spell letter for letter: one of at least 10 residues, or one of at least 3
-bounded by gaps or sequence ends, the shape a short shared exon takes. A lone
-substitution between two kept stretches carries too. So a mutually exclusive
-exon (PKM's 9 and 10) maps nothing, although it aligns column for column.
+`sharedResidueMap` maps a residue from one isoform to the other only inside a
+run of identical residues. The run must be at least 10 long, or at least 3 long
+with a gap or a sequence end on each side, which is how a short shared exon
+aligns. A single substitution between two kept runs maps too. A mutually
+exclusive exon (PKM's exons 9 and 10) therefore maps nothing, although it aligns
+column for column.
 
 `keepSharedStretches` applies the rule to a transcript aligned to another
 isoform's entry. Don't apply it to a structure, where a mismatch is usually a
@@ -310,21 +312,21 @@ describeCoveredRange(q) // 'covers transcript residues 14–53'
 function alignmentQuality(pa: PairwiseAlignment): AlignmentQuality
 
 interface AlignmentQuality {
-  /** columns carrying a residue on both rows, i.e. mapped positions */
+  /** columns with a residue in both rows, i.e. mapped positions */
   aligned: number
   identical: number
   transcriptLength: number
   structureLength: number
   /** identical over aligned; 0 when nothing aligned */
   identity: number
-  /** identical over the shorter of the two sequences: the statistic that
-   * separates a real match from a chance local alignment, see below */
+  /** identical over the shorter of the two sequences, which separates a
+   * real match from a chance local alignment (see LOW_IDENTITY_OVER_SHORTER) */
   identityOverShorter: number
   /** aligned over the structure's length */
   structureCoverage: number
   /** first and last transcript residue the alignment covers, 1-based
-   * inclusive; 0 when nothing aligned. A structure is usually a fragment, and
-   * which part of the protein it holds is the reader's first question. */
+   * inclusive; 0 when nothing aligned. A structure is usually a fragment, so
+   * these say which part of the protein it contains. */
   transcriptStart: number
   transcriptEnd: number
 }
@@ -348,18 +350,19 @@ function describeCoveredRange(q: AlignmentQuality): string | undefined
 
 <!-- /GENERATED -->
 
-Identity over the aligned columns flatters every local alignment, chance ones
-included, so `isLowSimilarity` judges `identityOverShorter` instead:
+Local alignment picks the best-scoring stretch of two sequences, so identity
+over the aligned columns is high even for a chance match. `isLowSimilarity`
+judges `identityOverShorter` instead:
 
 - At 20 identical residues or more, the floor is 0.3.
 - Under 20, it rises to 0.8, since a short real match (a bound peptide) is
   identical or one off.
-- Under 5, nothing passes.
+- Under 5, every match is low similarity.
 
-Nothing blocks on the verdict; the host decides what to show.
-`describeCoveredRange` is `undefined` when the structure covers the whole
-translation. [faq.md](faq.md#what-if-the-structure-is-not-my-protein) has the
-measurements behind the thresholds.
+The host decides what to do with a low-similarity match. `describeCoveredRange`
+is `undefined` when the structure covers the whole translation.
+[faq.md](faq.md#what-if-the-structure-is-not-my-protein) has the measurements
+behind the thresholds.
 
 ## Coordinates
 
@@ -403,10 +406,9 @@ interface CoordinateMapper {
   transcriptToAlignment: (p: TranscriptPos) => AlignmentCol | undefined
   alignmentToTranscript: (c: AlignmentCol) => TranscriptPos | undefined
   /**
-   * Raw lookup tables, for consumers that iterate the whole map rather than
-   * convert a single position (e.g. per-residue track rendering, selection of
-   * all aligned residues). Plain numbers — prefer the typed methods above for
-   * point conversions.
+   * The lookup tables as plain numbers, for code that iterates a whole map,
+   * such as drawing a per-residue track or selecting every aligned residue.
+   * Use the typed methods above to convert one position.
    */
   readonly maps: CoordinateMaps
 }
@@ -430,8 +432,8 @@ function transcriptRangeToStructureRange(
 
 - Build the mapper once per alignment. Every method returns `undefined` for a
   position the other side lacks: a gap, a tag, an unmodelled loop.
-- `maps` holds the raw tables, unbranded, for code that walks a whole map, such
-  as painting every aligned residue.
+- `maps` holds the raw tables as plain numbers, for code that iterates a whole
+  map, such as highlighting every aligned residue.
 - `transcriptRangeToStructureRange` takes 1-based inclusive transcript residues
   and returns a 0-based half-open structure range. It skips residues the
   structure lacks, so a feature running past a fragment's end clamps to the last
@@ -479,9 +481,10 @@ function alignmentCol(n: number): AlignmentCol
 
 <!-- /GENERATED -->
 
-A branded position is a plain number at runtime. Brand a raw number where it
-enters, such as a Mol\* pick or a hover event, and the compiler rejects passing
-it to the wrong space from then on.
+A branded position is a plain number at runtime. Wrap a raw number with
+`structurePos` or `transcriptPos` as soon as you read it, for example from a
+Mol\* click or hover, and the compiler then rejects it where the other kind of
+position belongs.
 
 ### Raw maps
 
@@ -521,8 +524,8 @@ function invertMap(arg: Record<number, number>): Record<number, number>
 
 <!-- /GENERATED -->
 
-These are the tables `makeCoordinateMapper` builds from; prefer the mapper.
-`structureSeqVsTranscriptSeqMap` throws on an alignment
+`makeCoordinateMapper` builds its tables with these functions; use the mapper
+instead where you can. `structureSeqVsTranscriptSeqMap` throws on an alignment
 `pairwiseAlignmentProblem` rejects.
 
 ### Genome positions
@@ -556,9 +559,9 @@ function codonGenomeSpan(
 
 <!-- /GENERATED -->
 
-`codonGenomeSpan` collapses a codon's genomic pieces into the one 0-based
-half-open span that encloses them, for navigating to or highlighting a residue
-on the genome. The pieces themselves come from g2p_mapper's `getCodonRanges`.
+`codonGenomeSpan` returns the 0-based half-open genome span that covers every
+base of a codon, for navigating to or highlighting a residue on the genome. It
+reads the codon's bases with g2p_mapper's `getCodonRanges`.
 
 ### Stop codons
 
@@ -579,10 +582,10 @@ function stripAllStopCodons(seq: string): string
 
 <!-- /GENERATED -->
 
-Use `stripStopCodon` on anything you map. An interior `*` holds a real codon's
-place (a mis-annotated CDS, a selenocysteine), and deleting it would shift every
-later residue against g2p_mapper's codon numbering. `stripAllStopCodons` is for
-a sequence sent to an outside search such as Foldseek, where `*` is not a valid
+Use `stripStopCodon` on anything you map. An interior `*` is a real codon (a
+mis-annotated CDS, a selenocysteine), and deleting it would shift every later
+residue against g2p_mapper's codon numbering. `stripAllStopCodons` is for a
+sequence sent to an outside search such as Foldseek, where `*` is not a valid
 character and no position depends on the result.
 
 ## Chain choice
@@ -621,13 +624,13 @@ interface EntityCandidate {
 }
 
 interface EntitySelection extends ScoredAlignment {
-  /** index into the candidate array of the entity that is the transcript's */
+  /** index of the chosen entity in the candidate array */
   index: number
 }
 
 interface ScoredAlignment {
-  /** alignment of the transcript against the entity (stop codons stripped on
-   * both sides, matching the rest of the mapping pipeline) */
+  /** alignment of the transcript against the entity, with stop codons
+   * stripped from both */
   alignment: PairwiseAlignment
   /** identical aligned residues */
   matches: number
@@ -674,13 +677,13 @@ nothing to map: an empty transcript, or no protein chain. Stop codons are
 stripped from both sides. [pipeline.md](pipeline.md#why-the-shorter-sequence)
 explains why the score divides by the shorter sequence.
 
-`alignTranscriptToEntity` scores one pair, which is how to honour a chain the
-user chose. It returns `undefined` for a pair over the size cap.
+`alignTranscriptToEntity` scores one pair; use it when the user picks the chain.
+It returns `undefined` for a pair over the size cap.
 
-`interactionMatchesMappedEntity` says whether a hover or click on an entity may
-drive genome navigation: only the mapped entity may, since any other chain's
-positions would go through the wrong alignment. With no mapped entity, every
-chain stays interactive.
+`interactionMatchesMappedEntity` returns whether a hover or click on an entity
+should move the genome view. Only the mapped entity should, because another
+chain's positions would go through the wrong alignment. With no mapped entity,
+every chain stays interactive.
 
 ### Reading a loaded Mol\* model
 
@@ -706,23 +709,22 @@ if (entity) {
 function extractEntities(model: StructureModel): Entity[] | undefined
 
 interface Entity {
-  /** mmCIF entity id, molstar's own bookkeeping */
+  /** mmCIF entity id */
   entityId: string
   /** one letter per residue, observed or not */
   seq: string
   /** molstar `label_seq_id` per position of `seq` */
   seqIds: number[]
-  /** author chain ids carrying this entity, e.g. ['A', 'B'] for a homodimer:
-   * what a user recognises from the PDB entry page */
+  /** author chain ids of this entity, e.g. ['A', 'B'] for a homodimer, as
+   * the PDB entry page lists them */
   chains: string[]
-  /** DNA, RNA or a hybrid, by molstar's entity subtype. Its letters spell
-   * amino acids too (A, C, G, T, U), so it is kept out of the alignment
-   * rather than left to score low. */
+  /** DNA, RNA or a hybrid, by molstar's entity subtype. A, C, G, T and U
+   * are amino-acid letters too, so chooseMappedEntity skips these. */
   nucleicAcid?: boolean
   /** `auth_seq_id` per position: the depositors' numbering, which papers cite
-   * (1TUP's position 154 is R248) and Mol*'s hover shows. Display only;
-   * address Mol* through `seqIds`. Absent when the model has no atomic
-   * hierarchy. See `residueNumber`. */
+   * (1TUP's position 154 is R248) and Mol*'s hover shows. For display only;
+   * use `seqIds` to select residues in Mol*. Absent when the model has no
+   * atomic hierarchy. See `residueNumber`. */
   authSeqIds?: number[]
 }
 
@@ -792,18 +794,21 @@ function fillAuthSeqIds(
 
 <!-- /GENERATED -->
 
-- `StructureModel` is the narrow slice of a Mol\* model these functions read.
-  Pass the Mol\* object itself; the package never imports Mol\*.
-- An `Entity` passes straight to `chooseMappedEntity`, since it carries `seq`
+- `StructureModel` lists the fields of a Mol\* model these functions read. Pass
+  the Mol\* object itself; the package never imports Mol\*.
+- You can pass an `Entity` to `chooseMappedEntity` directly, since it has `seq`
   and `nucleicAcid`.
 - `extractStructureSequences` returns just the protein chains' sequences.
-- The sequence comes from Mol\*'s `sequence.code`, never `sequence.label`.
-  `label` spells MSE, TPO and ACE by component id, so the string outgrows
-  `seqIds` and every later position addresses the wrong residue.
-  `oneLetterSequence` then fills each `X` from the mmCIF canonical sequence:
-  `oneLetterSequence(['M', 'X', 'K'], 'MMK')` is `'MMK'`.
+- `extractEntities` reads the sequence from Mol\*'s `sequence.code`. Mol\*'s
+  `sequence.label` writes some residues as their three-letter component id (MSE,
+  TPO, ACE), so it is longer than `seqIds`, and every later position would
+  select the wrong residue.
+- `oneLetterSequence` replaces each `X` in `sequence.code` with the residue from
+  the mmCIF canonical sequence: `oneLetterSequence(['M', 'X', 'K'], 'MMK')` is
+  `'MMK'`.
 - `fillAuthSeqIds` numbers unobserved residues by the offset of the nearest
-  observed one, so a disordered loop counts on the way the paper does.
+  observed one, so the numbering continues through a disordered loop as the
+  paper's does.
 
 ### Residue numbering
 
@@ -862,11 +867,12 @@ function residueRangeToPositions(
 
 <!-- /GENERATED -->
 
-Cross into Mol\* only through `seqIds`. `label_seq_id` equals position + 1 only
-for a file with `entity_poly_seq` or SEQRES; a SEQRES-less PDB numbers by author
-numbering and leaves holes. [coordinates.md](coordinates.md) has the full rules.
-`residueNumber` and `residueRangeToPositions` are for display and for user input
-such as "R248"; never feed their numbers back into a map.
+Get Mol\*'s `label_seq_id` from these functions, which read `Entity.seqIds`.
+`label_seq_id` is position + 1 only in a file with `entity_poly_seq` or SEQRES.
+A PDB file without SEQRES uses author numbering, with gaps at unobserved
+residues. [coordinates.md](coordinates.md) has the full rules. `residueNumber`
+and `residueRangeToPositions` are for display and for user input such as "R248";
+don't pass their numbers to a coordinate map.
 
 ### Per-residue confidence
 
@@ -937,12 +943,12 @@ function looksLikePlddt(values: number[] | undefined): values is number[]
 
 <!-- /GENERATED -->
 
-AlphaFold stores pLDDT in the B-factor column, so this reads the first atom's
-B-factor of each residue. The values are keyed by `label_seq_id` because the
-atomic hierarchy holds only observed residues. For an experimental entry the
-column holds real B-factors, not confidence, so check the experimental method
-before drawing it; `looksLikePlddt` only rejects a constant or out-of-range
-column.
+AlphaFold stores pLDDT in the B-factor column, so `extractPerResidueConfidence`
+reads the B-factor of each residue's first atom. The values are keyed by
+`label_seq_id` because the atomic hierarchy holds only observed residues. For an
+experimental entry the column holds real B-factors, not confidence, so check the
+experimental method before drawing it; `looksLikePlddt` only rejects a constant
+or out-of-range column.
 
 ### Isoforms
 
@@ -997,7 +1003,7 @@ interface RankedIsoform {
   /** identical residues against the structure, for an isoform that does not
    * match it exactly; undefined with no structure to compare to */
   identical?: number
-  /** that alignment's score, which is what ranks non-matching isoforms */
+  /** that alignment's score, which ranks the non-matching isoforms */
   score?: number
 }
 
@@ -1014,20 +1020,21 @@ interface ClassifiedIsoforms {
 <!-- /GENERATED -->
 
 An isoform that translates to exactly the structure's sequence wins. The rest
-rank by alignment score, then identical residues, then length. The score leads
-because an isoform carrying an exon the structure lacks still aligns every
-structure residue, across a gap (1MH1 against Rac1 and Rac1b).
+rank by alignment score, then identical residues, then length. Score comes first
+because an isoform with an exon the structure lacks still aligns every structure
+residue, across a gap (1MH1 against Rac1 and Rac1b).
 
-`pickStructureSequence` chooses the chain to rank against: one some isoform
-translates to exactly, else the one `chooseMappedEntity` maps the longest
-isoform to. Never just the first chain, which on 1H26 is CDK2 rather than p53.
+`pickStructureSequence` chooses the chain to rank against. It picks a chain some
+isoform translates to exactly, else the chain `chooseMappedEntity` maps the
+longest isoform to. On 1H26 the first chain is CDK2, while the p53 peptide is
+the third.
 
 ## UniProt mapping
 
-Every PDB entry carries an alignment of each polymer entity to UniProt, the
-correspondence SIFTS curates and RCSB republishes. The residue mapping itself
-always comes from the package's own alignment; the entry's alignment places
-UniProt annotations and drops fusion partners.
+SIFTS aligns each polymer entity of every PDB entry to UniProt, and RCSB
+publishes the result. The package maps residues with its own alignment, and uses
+the entry's UniProt alignment to place UniProt annotations and to find fusion
+partners.
 
 ### Fetching
 
@@ -1101,18 +1108,21 @@ const RCSB_DATA_GRAPHQL_URL: 'https://data.rcsb.org/graphql'
 
 <!-- /GENERATED -->
 
-One GraphQL call to RCSB's data API answers both the alignment and the entry's
-protein sequences, a few kB where reading them out of the structure file meant
-downloading a ribosome to label an isoform list. The fetch retries twice, within
-a 20-second deadline, except on a definitive answer: an id RCSB has no entry for
-throws a 404 `HttpError`, and a GraphQL error counts as a 400, because asking
-again gets the same answer. An entry nothing aligns to UniProt (DNA alone) has
-no mappings and is not an error. `struct*` are 0-based inclusive positions, the
-package's own; `unp*` are 1-based UniProt positions.
+`fetchPdbEntry` reads the alignment and the entry's protein sequences in one
+GraphQL call to RCSB's data API. The answer is a few kB, so an isoform list can
+be labelled without downloading the structure file, which for a ribosome is
+large.
 
-Measured 2026-10-11 against PDBe's SIFTS API on 23 entries (1TUP, 2RH1, 4HHB,
-the 7K00 ribosome among them): every mapped residue agreed, and RCSB answered in
-3 s where PDBe took 24 s and failed one entry.
+`fetchPdbEntry` retries twice within a 20-second deadline. It does not retry an
+id RCSB has no entry for, which throws a 404 `HttpError`, or a GraphQL error,
+which throws as a 400, because asking again gets the same answer. An entry with
+no UniProt alignment, such as DNA alone, returns empty `mappings`. `structStart`
+and `structEnd` are 0-based inclusive structure positions; `unpStart` and
+`unpEnd` are 1-based UniProt positions.
+
+We compared RCSB with PDBe's SIFTS API on 23 entries on 2026-10-11, including
+1TUP, 2RH1, 4HHB and the 7K00 ribosome. Every mapped residue agreed. RCSB
+answered in 3 s and PDBe in 24 s, and PDBe failed on one entry.
 
 ### Placing UniProt features
 
@@ -1158,10 +1168,11 @@ type MapUniProtPosition = (uniprotPos: number) => number | undefined
 <!-- /GENERATED -->
 
 Pass the entity you mapped the transcript to; an `Entity` from `extractEntities`
-fits `SegmentEntity`. A heteromer maps each chain to its own accession, and when
-several accessions cover one entity (a chimera) the one covering the most
-residues wins. For an AlphaFold model, whose sequence is the UniProt sequence,
-use `identityUniProtPositionMap` instead of asking for the entry.
+fits `SegmentEntity`. In a heteromer each chain has a different accession. When
+several accessions cover one entity (a chimera), `chooseUniProtMappingForEntity`
+picks the one covering the most residues. For an AlphaFold model, whose sequence
+is the UniProt sequence, use `identityUniProtPositionMap` instead of fetching
+the entry.
 
 ### Trimming fusion partners
 
@@ -1198,13 +1209,13 @@ function fusionPartnerPositions(
 
 <!-- /GENERATED -->
 
-Local alignment bridges a fusion boundary: on 2RH1 it scatters 33 receptor
-residues onto T4 lysozyme. `fusionPartnerPositions` returns the mapped positions
-the entry's alignment gives a protein other than the transcript's. The
-transcript's own accession is the one whose covered positions are most often
-identical. Unless it reaches half identity, the transcript is taken to be
-neither protein and nothing is unmapped. Residues given no accession, such as
-tags, stay mapped.
+Local alignment continues across a fusion boundary, so on 2RH1 it maps 33
+receptor residues onto T4 lysozyme. `fusionPartnerPositions` returns the mapped
+positions that the entry's UniProt alignment assigns to another protein. It
+takes the transcript's accession to be the one whose positions are most often
+identical to the transcript. If that accession is under half identity, it treats
+the transcript as neither protein and returns no positions. Residues with no
+accession, such as tags, stay mapped.
 
 ## Structure sources
 
@@ -1261,17 +1272,17 @@ function buildGeneNameQuery(
 
 <!-- /GENERATED -->
 
-- Every recognized id is searched as a UniProt cross-reference. `geneId` is
-  added to them when it is one, after its version suffix is stripped.
-- The gene-name search runs at the same time, but its answer counts only when no
-  cross-reference found a reviewed entry. It asks `gene_exact`, which skips
-  synonyms and paralogs, and is limited to reviewed entries.
+- Each recognized id is searched as a UniProt cross-reference. `geneId` is
+  searched too when it is a recognized id, without its version suffix.
+- The gene-name search runs at the same time, but its results count only when no
+  cross-reference found a reviewed entry. It searches `gene_exact`, which skips
+  synonyms and paralogs, and only reviewed entries.
 - `organismId` is an NCBI taxon id. Without it the search covers every species.
-  When the taxon itself finds nothing, the search widens to its descendants:
+  When the taxon has no match, the search widens to its descendants, because
   Swiss-Prot files fission yeast (4896) under strain 284812.
-- Reviewed entries sort first. When every attempt fails, the call throws the
-  network error rather than returning an empty list; partial failures show in
-  `failedCount`.
+- Reviewed entries sort first. When every search fails, the call throws the
+  network error rather than returning an empty list. `failedCount` counts the
+  searches that failed.
 
 ### Database ids
 
@@ -1311,9 +1322,9 @@ type DbType = 'ensembl' | 'refseq' | 'ccds' | 'hgnc' | 'geneid'
 
 <!-- /GENERATED -->
 
-Recognized: Ensembl gene, transcript and protein ids of any species; RefSeq
-mRNA, ncRNA and protein (`NP_`, `XP_`, `YP_`, `AP_`, not `WP_`, which names a
-sequence shared across species); CCDS; HGNC; and NCBI `GeneID:`.
+`isRecognizedDatabaseId` accepts Ensembl gene, transcript and protein ids of any
+species; RefSeq mRNA, ncRNA and protein (`NP_`, `XP_`, `YP_`, `AP_`, not `WP_`,
+which names a sequence shared across species); CCDS; HGNC; and NCBI `GeneID:`.
 
 ### AlphaFold
 
@@ -1360,12 +1371,12 @@ interface AlphaFoldModel {
 
 `fetchAlphaFoldModels` asks AlphaFold DB which models exist rather than deriving
 a file name: a protein past AlphaFold's length cap has no F1 model at all
-(dystrophin has fourteen isoform models), and the model version moves. An
-accession AlphaFold never folded returns `[]`.
+(dystrophin has fourteen isoform models), and the model version changes. For an
+accession AlphaFold never folded, it returns `[]`.
 
 `pickAlphaFoldModel` prefers a model folded from exactly one of the
-translations, canonical first, so the view maps it as an identity. Failing that,
-it takes the canonical model, then the longest isoform model.
+translations, canonical first, so every residue maps to itself. Failing that, it
+takes the canonical model, then the longest isoform model.
 
 ### Experimental structures (RCSB)
 
@@ -1398,7 +1409,7 @@ interface ExperimentalStructure {
   end: number
   /** fraction of the UniProt sequence the entry covers, 0..1 */
   coverage: number
-  /** author chain ids carrying the protein */
+  /** author chain ids of the protein */
   chains: string[]
 }
 
@@ -1435,18 +1446,19 @@ const RCSB_SEQUENCE_COORDINATES_URL: 'https://sequence-coordinates.rcsb.org/grap
 
 <!-- /GENERATED -->
 
-Every PDB entry RCSB aligns to the accession, best coverage first and sharpest
-resolution within a tie, with the chains carrying the protein. Two CORS-enabled
-calls: the sequence-coordinates API lists the aligned entities with the UniProt
-range each covers, and the data API answers their entries' method, resolution
-and chains in batches of a thousand. RCSB's computed models (`AF_…`) are left
-out, since a prediction comes from AlphaFold's own API. An accession with no
-entry, or one RCSB does not know, is `[]`; an isoform accession is asked as its
-entry.
+`fetchExperimentalStructures` lists every PDB entry RCSB aligns to the
+accession, best coverage first and best resolution within a tie, with the chains
+of the protein. It makes two CORS-enabled calls. The sequence-coordinates API
+lists the aligned entities and the UniProt range each covers, and the data API
+returns each entry's method, resolution and chains, in batches of a thousand
+entities. It skips RCSB's computed models (`AF_…`); use `fetchAlphaFoldModels`
+for predictions. It returns `[]` for an accession with no entry or one RCSB does
+not know, and looks up an isoform accession (P04637-2) under its canonical one.
 
-Measured 2026-10-11: for TP53 the two calls took 1.3 s; 3D-Beacons took 3.7 s,
-PDBe's best_structures 14 s and timed out on HBB, and 3D-Beacons listed no
-structure at all for BRCA1 that RCSB and PDBe both had 33 for.
+We timed the alternatives for TP53 on 2026-10-11. RCSB's two calls took 1.3 s,
+3D-Beacons took 3.7 s, and PDBe's best_structures took 14 s and timed out on
+HBB. For BRCA1, RCSB and PDBe each listed 33 structures and 3D-Beacons listed
+none.
 
 ## URLs and formats
 
@@ -1504,8 +1516,8 @@ function structureDisplayLabel(options: {
   only when `fetchAlphaFoldModels` cannot be reached.
 - `resolveStructureUrl` turns a `{ pdbId }` shorthand into a URL. An explicit
   `url` or inline `data` always wins. A `uniprotId` resolves to no URL, and
-  outranks a `pdbId`, because which AlphaFold file to open is a question for
-  `fetchAlphaFoldModels`.
+  outranks a `pdbId`, because `fetchAlphaFoldModels` decides which AlphaFold
+  file to open.
 - `getPdbIdFromUrl` recognizes only the PDB archive's own hosts, so a user's
   model that happens to be named `1abc.cif` does not pick up 1ABC's annotations.
 
@@ -1632,10 +1644,10 @@ function isBinaryStructureUrl(url: string): boolean
 
 <!-- /GENERATED -->
 
-Choose by content whenever there is content. PDB read as mmCIF throws, but mmCIF
-read as PDB succeeds and yields thousands of misread atoms and zero polymer
-entities, so a wrong guess shows nothing and reports nothing.
-`structureFormatFromContent` looks only at the first 4 kB.
+Use `structureFormatFromContent` whenever you have the file's text. PDB read as
+mmCIF throws, but mmCIF read as PDB succeeds and yields thousands of misread
+atoms and zero polymer entities, so a wrong guess shows an empty structure and
+raises no error. `structureFormatFromContent` looks only at the first 4 kB.
 
 ## Fetch helpers
 
@@ -1698,14 +1710,16 @@ function timeout(time: number, signal?: AbortSignal): Promise<void>
 - Every network function takes `FetchOptions` last: `RequestInit` plus the
   `fetch` to call, which defaults to `globalThis.fetch` at call time. Pass an
   instrumented fetch from the host, or a double from a test.
-- Outside a browser, a request with no `User-Agent` of its own sends
+- Outside a browser, a request with no `User-Agent` header sends
   `p2s_mapper (+https://github.com/GMOD/p2s_mapper)`, because AlphaFold's API
-  answers 403 to `node`, the one Node's fetch sends. A browser sends its own.
+  answers 403 to `node`, which Node's fetch sends by default. In a browser, the
+  browser sets the header.
 - `rawfetch` returns any response; `myfetch` throws an `HttpError` on a non-2xx
-  one; `jsonfetch` also parses the body, typed as the caller names it.
-- An `HttpError` carries the `status`, and its message carries the host and the
-  first line of the body, not a whole HTML error page. `isDefinitiveFailure` is
-  true for a 4xx, where asking again gets the same answer.
+  one; `jsonfetch` also parses the body and returns it as the type the caller
+  passes.
+- An `HttpError` has the `status`, and its message names the host and quotes the
+  first line of the body. `isDefinitiveFailure` is true for a 4xx, where asking
+  again gets the same answer.
 - `networkError` replaces the browser's bare `TypeError: Failed to fetch` with a
   message naming the host. `abortError` turns an `AbortSignal`'s reason into a
   real `Error`, and `timeout` is an abortable delay.

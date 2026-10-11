@@ -20,23 +20,22 @@
  * So carry the real ids and convert through them.
  */
 export interface Entity {
-  /** mmCIF entity id, molstar's own bookkeeping */
+  /** mmCIF entity id */
   entityId: string
   /** one letter per residue, observed or not */
   seq: string
   /** molstar `label_seq_id` per position of `seq` */
   seqIds: number[]
-  /** author chain ids carrying this entity, e.g. ['A', 'B'] for a homodimer:
-   * what a user recognises from the PDB entry page */
+  /** author chain ids of this entity, e.g. ['A', 'B'] for a homodimer, as
+   * the PDB entry page lists them */
   chains: string[]
-  /** DNA, RNA or a hybrid, by molstar's entity subtype. Its letters spell
-   * amino acids too (A, C, G, T, U), so it is kept out of the alignment
-   * rather than left to score low. */
+  /** DNA, RNA or a hybrid, by molstar's entity subtype. A, C, G, T and U
+   * are amino-acid letters too, so chooseMappedEntity skips these. */
   nucleicAcid?: boolean
   /** `auth_seq_id` per position: the depositors' numbering, which papers cite
-   * (1TUP's position 154 is R248) and Mol*'s hover shows. Display only;
-   * address Mol* through `seqIds`. Absent when the model has no atomic
-   * hierarchy. See `residueNumber`. */
+   * (1TUP's position 154 is R248) and Mol*'s hover shows. For display only;
+   * use `seqIds` to select residues in Mol*. Absent when the model has no
+   * atomic hierarchy. See `residueNumber`. */
   authSeqIds?: number[]
 }
 

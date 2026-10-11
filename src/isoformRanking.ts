@@ -17,7 +17,7 @@ export interface RankedIsoform {
   /** identical residues against the structure, for an isoform that does not
    * match it exactly; undefined with no structure to compare to */
   identical?: number
-  /** that alignment's score, which is what ranks non-matching isoforms */
+  /** that alignment's score, which ranks the non-matching isoforms */
   score?: number
 }
 

@@ -24,7 +24,7 @@ export interface ExperimentalStructure {
   end: number
   /** fraction of the UniProt sequence the entry covers, 0..1 */
   coverage: number
-  /** author chain ids carrying the protein */
+  /** author chain ids of the protein */
   chains: string[]
 }
 

@@ -24,13 +24,13 @@ export function interactionMatchesMappedEntity(
 }
 
 export interface EntitySelection extends ScoredAlignment {
-  /** index into the candidate array of the entity that is the transcript's */
+  /** index of the chosen entity in the candidate array */
   index: number
 }
 
 export interface ScoredAlignment {
-  /** alignment of the transcript against the entity (stop codons stripped on
-   * both sides, matching the rest of the mapping pipeline) */
+  /** alignment of the transcript against the entity, with stop codons
+   * stripped from both */
   alignment: PairwiseAlignment
   /** identical aligned residues */
   matches: number

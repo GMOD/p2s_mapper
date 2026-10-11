@@ -44,10 +44,9 @@ export interface CoordinateMapper {
   transcriptToAlignment: (p: TranscriptPos) => AlignmentCol | undefined
   alignmentToTranscript: (c: AlignmentCol) => TranscriptPos | undefined
   /**
-   * Raw lookup tables, for consumers that iterate the whole map rather than
-   * convert a single position (e.g. per-residue track rendering, selection of
-   * all aligned residues). Plain numbers — prefer the typed methods above for
-   * point conversions.
+   * The lookup tables as plain numbers, for code that iterates a whole map,
+   * such as drawing a per-residue track or selecting every aligned residue.
+   * Use the typed methods above to convert one position.
    */
   readonly maps: CoordinateMaps
 }

@@ -7,21 +7,21 @@ import {
 import type { PairwiseAlignment } from './mappings.ts'
 
 export interface AlignmentQuality {
-  /** columns carrying a residue on both rows, i.e. mapped positions */
+  /** columns with a residue in both rows, i.e. mapped positions */
   aligned: number
   identical: number
   transcriptLength: number
   structureLength: number
   /** identical over aligned; 0 when nothing aligned */
   identity: number
-  /** identical over the shorter of the two sequences: the statistic that
-   * separates a real match from a chance local alignment, see below */
+  /** identical over the shorter of the two sequences, which separates a
+   * real match from a chance local alignment (see LOW_IDENTITY_OVER_SHORTER) */
   identityOverShorter: number
   /** aligned over the structure's length */
   structureCoverage: number
   /** first and last transcript residue the alignment covers, 1-based
-   * inclusive; 0 when nothing aligned. A structure is usually a fragment, and
-   * which part of the protein it holds is the reader's first question. */
+   * inclusive; 0 when nothing aligned. A structure is usually a fragment, so
+   * these say which part of the protein it contains. */
   transcriptStart: number
   transcriptEnd: number
 }

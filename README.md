@@ -61,14 +61,14 @@ if (picked) {
 }
 ```
 
-Every position is 0-based. The two kinds are separate branded types, so passing
-a structure position where a transcript position belongs is a compile error.
+Every position is 0-based. Structure and transcript positions are separate
+types, so passing one where the other belongs is a compile error.
 
 ### From a genome position to a residue, and back
 
-g2p_mapper turns the transcript's CDS into genome ↔ protein tables; p2s_mapper
-carries a protein position on to the structure and to the `label_seq_id` Mol\*
-addresses residues by.
+g2p_mapper maps genome positions to protein positions. p2s_mapper maps a protein
+position to a structure position, and that to the `label_seq_id` Mol\* uses to
+select a residue.
 
 ```ts
 import { genomeToTranscriptSeqMapping } from 'g2p_mapper'
@@ -129,8 +129,9 @@ if (hovered !== undefined) {
 
 ### With a structure loaded in Mol\*
 
-`extractEntities` reads each chain's sequence, ids and numbering from a loaded
-Mol\* model, through a narrow structural type rather than a Mol\* import.
+`extractEntities` reads each chain's sequence, residue ids and numbering from a
+loaded Mol\* model. `StructureModel` lists the fields it reads, so the package
+needs no Mol\* import.
 
 ```ts
 import {
@@ -184,12 +185,13 @@ if (accession) {
 ```
 
 Every network function takes `{ fetch?, signal? }` last, defaulting to
-`globalThis.fetch`, so a host can pass its own fetch and abort a stale request.
+`globalThis.fetch`, so the caller can pass a custom fetch and an `AbortSignal`.
 
 ### Place UniProt annotations on a PDB entry
 
-A PDB construct is usually a fragment, numbered differently from UniProt. The
-entry's UniProt alignment, read from RCSB, says how the two line up.
+A PDB construct is usually a fragment, numbered differently from UniProt.
+`fetchUniProtStructureMappings` reads the entry's alignment to UniProt from
+RCSB.
 
 ```ts
 import {
@@ -216,22 +218,21 @@ toStructure(248) // 154: UniProt residue 248 is structure position 154
 - [api.md](docs/api.md): every export, with its signature, types and an example
 - [pipeline.md](docs/pipeline.md): the flow above, step by step, and why chain
   choice divides by the shorter sequence
-- [coordinates.md](docs/coordinates.md): the four numberings of a residue and
-  the one route between each
+- [coordinates.md](docs/coordinates.md): the four ways a residue is numbered,
+  and which function converts between them
 - [faq.md](docs/faq.md): can I trust the mapping? What the package checks, and
   what it leaves to you
 
-## Things to know first
+## Pitfalls
 
-- Every coordinate is **0-based** and branded by space, so the compiler rejects
-  mixing them. UniProt positions and author residue numbers are 1-based. See
-  [coordinates.md](docs/coordinates.md).
-- A `PairwiseAlignment` has **row 0 = transcript, row 1 = structure**. Use the
-  accessors, not indexes.
-- The best-matching chain always wins, even a poor match. Check it with
-  `isLowSimilarity` before trusting the mapping.
-- Cross into Mol\* only through `Entity.seqIds`: `label_seq_id` is not always
-  position + 1.
+- Positions are **0-based**, except UniProt positions and author residue
+  numbers, which are 1-based. See [coordinates.md](docs/coordinates.md).
+- A `PairwiseAlignment` has **row 0 = transcript, row 1 = structure**. Read the
+  rows with `transcriptAlignedSeq` and `structureAlignedSeq`.
+- `chooseMappedEntity` returns the best-matching chain even when the match is
+  poor. Check it with `isLowSimilarity` before trusting the mapping.
+- Get Mol\*'s `label_seq_id` from `toLabelSeqIds`, which reads `Entity.seqIds`.
+  Adding 1 to the position gives the wrong residue in a PDB file without SEQRES.
 
 ## License
 
