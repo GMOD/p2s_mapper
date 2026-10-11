@@ -1,13 +1,9 @@
-// Pure structure-URL builders and target parsers. Kept dependency-free so both
-// the launch flow and the ProteinView model (e.g. resolving a `uniprotId`/`pdbId`
-// shorthand at hydration) can import them without pulling in heavy launch code.
+// Structure URL builders and target parsers, with no dependencies.
 
 const ALPHAFOLD_VERSION = 'v6'
 
-// UniProt endpoints. rest.* is the machine API (the GFF the feature tracks and
-// the alignment's annotation rows both read, the FASTA the temporary protein
-// assembly is built from); www.*/entry is the human-facing entry page the UI
-// links to. Centralized so a path change is one edit rather than a grep.
+// UniProt endpoints. rest.* is the machine API, serving the features as GFF
+// and the sequence as FASTA; www.*/entry is the entry page for people.
 export function uniprotGffUrl(uniprotId: string) {
   return `https://rest.uniprot.org/uniprotkb/${uniprotId}.gff`
 }
@@ -49,20 +45,15 @@ export function rcsbEntryUrl(pdbId: string) {
 }
 
 /**
- * Resolve the `{ pdbId }` shorthand to a concrete structure URL, so a
- * hand-authored snapshot or a short launch URL doesn't have to know RCSB's
- * filename format. An explicit `url` (or inline `data`) always wins.
- * Idempotent: re-resolving an already-resolved spec returns the same url.
+ * Resolve the `{ pdbId }` shorthand to a structure URL, so a hand-written config
+ * or a short launch URL needs no RCSB filename. An explicit `url` (or inline
+ * `data`) always wins, and resolving an already-resolved spec returns the same
+ * url.
  *
- * `uniprotId` deliberately resolves to no url here, and still outranks a
- * `pdbId`. An accession's files are whatever AlphaFold DB currently holds — an
- * isoform model, several fragments, a new model version — so the structure
- * keeps the accession and the structure loader asks the prediction API which
- * file to open.
- *
- * Shared by the Structure model's snapshot preprocessor and the
- * LaunchView-ProteinView extension point, which would otherwise each carry
- * their own copy of the same precedence rule.
+ * `uniprotId` resolves to no url and still outranks a `pdbId`. AlphaFold DB's
+ * files for an accession change (an isoform model, several fragments, a new
+ * model version), so the caller keeps the accession and asks
+ * `fetchAlphaFoldModels` which file to open.
  */
 export function resolveStructureUrl({
   url,
@@ -149,9 +140,9 @@ export function getConfidenceUrlFromTarget(target: string) {
 }
 
 /**
- * What a structure is called in the UI: its PDB id, its AlphaFold accession,
- * else the file's name. Shared by the view title, the alignment panel heading
- * and the hover readout, so one structure reads the same everywhere.
+ * The name to show for a structure: its PDB id, its AlphaFold accession, else
+ * the file's name. Use it wherever a structure is named, so each place shows
+ * the same name.
  */
 export function structureDisplayLabel({
   url,

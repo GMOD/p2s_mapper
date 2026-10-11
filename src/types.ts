@@ -12,11 +12,8 @@ export const ALIGNMENT_ALGORITHM_VALUES: AlignmentAlgorithm[] = [
   'smith_waterman',
 ]
 
-/**
- * Parses an untrusted algorithm name (a URL session-spec param) into the union.
- * The only place a coercion is needed: the model property is an enumeration, so
- * everything downstream of hydration is already typed.
- */
+/** Parses an untrusted algorithm name, such as a URL parameter, falling back
+ * to Smith-Waterman. */
 export function coerceAlignmentAlgorithm(value: string): AlignmentAlgorithm {
   return (
     ALIGNMENT_ALGORITHM_VALUES.find(v => v === value) ??

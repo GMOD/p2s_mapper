@@ -56,8 +56,7 @@ export interface EntityCandidate {
  * usually is: on 1H26 the 11-residue p53 peptide matches 11 while CDK2 accrues
  * 58 scattered identities, and on 4ZZJ SIRT1 beats the 7-residue p53 peptide
  * 63 to 6. The Smith-Waterman score is no better there (56 vs 58). Dividing
- * by length asks the question the picker actually has, which chain *is* this
- * gene's product: the peptide scores 0.69 and 0.50, the partners 0.19 and
+ * by the shorter length identifies the chain that *is* this gene's product: the peptide scores 0.69 and 0.50, the partners 0.19 and
  * 0.17, and across a ribosome's 55 chains no decoy passes 0.29.
  *
  * Dividing by the *entity's* length alone penalised a fusion construct: a
@@ -136,18 +135,16 @@ export function alignTranscriptToEntity(
 }
 
 /**
- * Pick which polymer entity of a structure corresponds to the transcript.
+ * Pick the polymer entity of a structure that is the transcript's protein.
  *
- * The plugin historically hardcoded entity `[0]`, which silently mis-maps every
- * heteromeric / protein-DNA / processed-peptide structure where the protein of
- * interest is some other chain. Selecting by alignment makes the structure self-
- * describe which entity is the gene's protein: an exact sequence match wins
- * outright, otherwise the entity with the highest identity over the shorter
- * sequence (see `explainedFraction`). Nucleic-acid entities are never
- * candidates.
+ * Taking entity `[0]` mis-maps every heteromeric, protein-DNA or
+ * processed-peptide structure where the protein is another chain. An exact
+ * sequence match wins outright; otherwise the entity with the highest identity
+ * over the shorter sequence wins (see `explainedFraction`). Nucleic-acid
+ * entities are never candidates.
  *
- * Returns `undefined` only when there is nothing to map (no transcript or no
- * protein entities) — never a silent fallback to the wrong entity.
+ * Returns `undefined` only when there is nothing to map: no transcript, or no
+ * protein entity. It never falls back to another entity.
  */
 export function chooseMappedEntity(
   transcript: string,

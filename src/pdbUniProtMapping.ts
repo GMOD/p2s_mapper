@@ -70,12 +70,11 @@ function segmentsForEntity(
 }
 
 /**
- * Picks the UniProt entry that describes a given entity, with its segments
- * narrowed to that entity. Only the entity the plugin has mapped to the
- * transcript is relevant — a heteromer maps each of its chains to a different
- * accession, and using the wrong one would silently annotate the wrong protein.
- * When several accessions cover the same entity (a chimeric construct) the one
- * contributing the most residues wins.
+ * Picks the UniProt entry for a given entity, with its segments narrowed to
+ * that entity. Pass the entity mapped to the transcript: a heteromer's chains
+ * align to different accessions, and the wrong one would annotate the wrong
+ * protein. When several accessions cover one entity (a chimeric construct), the
+ * one covering the most residues wins.
  */
 export function chooseUniProtMappingForEntity(
   mappings: UniProtStructureMapping[],

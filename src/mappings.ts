@@ -26,11 +26,10 @@ export const alignmentLength = (pa: PairwiseAlignment) =>
   transcriptAlignedSeq(pa).length
 
 /**
- * Why a pairwise alignment can't be used, or undefined if it's usable. The two
- * rows must be the same non-zero length — every coordinate map walks them in
- * lockstep, so a ragged pair would map positions to nonsense. Callers that
- * accept alignments from outside (the manual-import dialog) check this and
- * report it; the internal map builders assert on it.
+ * Why a pairwise alignment can't be used, or undefined if it's usable. Both
+ * rows must have the same non-zero length, because every coordinate map walks
+ * them in step. Check an alignment from outside the package with this; the
+ * internal map builders throw on it.
  */
 export function pairwiseAlignmentProblem(pa: PairwiseAlignment) {
   const transcript = transcriptAlignedSeq(pa)

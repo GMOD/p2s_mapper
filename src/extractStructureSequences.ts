@@ -1,23 +1,17 @@
 /** A polymer entity of a loaded structure: its mmCIF entity id, its one-letter
- * sequence, and the molstar `label_seq_id` of each of those residues.
+ * sequence, and the molstar `label_seq_id` of each residue.
  *
- * The entity id is what lets every downstream step talk about "the gene's
- * protein" by identity instead of by the fragile entity-[0] position.
+ * Structure positions are 0-based indices into `seq`, and molstar selects
+ * residues by `label_seq_id`. The two differ by 1 only when the entity's
+ * sequence covers every residue from 1, which holds for any mmCIF with an
+ * `entity_poly_seq` category (all of RCSB and AlphaFold) and for a PDB file
+ * with SEQRES records, from which molstar builds that category.
  *
- * `seqIds` is what lets it talk about a *residue* by identity. Structure
- * positions in this plugin are 0-based indices into `seq`; molstar addresses
- * residues by `label_seq_id`. Those are related by `+1` only when the entity's
- * sequence covers every residue from 1 — true for any mmCIF with an
- * `entity_poly_seq` category (all of RCSB and AlphaFold) and for PDB files
- * carrying SEQRES records, because molstar synthesizes the category from them.
- *
- * A PDB-format file with no SEQRES has no such category, so molstar falls back
- * to `StructureSequence.fromHierarchy` and takes `label_seq_id` straight from
- * the observed residues' author numbering: a chain whose coordinates start at
- * residue 94 yields seqIds 94.., and an unobserved loop leaves a hole. Deriving
- * the id arithmetically there is off by the whole offset, in both directions —
- * every hover reads the wrong residue and every highlight paints the wrong one.
- * So carry the real ids and convert through them.
+ * For a PDB file without SEQRES, molstar falls back to
+ * `StructureSequence.fromHierarchy` and takes `label_seq_id` from the observed
+ * residues' author numbering: a chain whose coordinates start at residue 94 has
+ * seqIds 94.., and an unobserved loop leaves a gap. Adding 1 there is off by the
+ * whole offset, in both directions, so convert through `seqIds`.
  */
 export interface Entity {
   /** mmCIF entity id */
@@ -283,8 +277,8 @@ export function entityLabel(entity: Entity) {
   return `${chains} (${entity.seq.length} ${entity.nucleicAcid ? 'nt' : 'aa'})`
 }
 
-/** The protein chains' sequences, for the launch dialog's isoform matching,
- * which has no use for a DNA strand that happens to align. */
+/** The protein chains' sequences, for ranking isoforms against a structure.
+ * DNA chains are left out, because their letters align as amino acids. */
 export function extractStructureSequences(
   model: StructureModel,
 ): string[] | undefined {

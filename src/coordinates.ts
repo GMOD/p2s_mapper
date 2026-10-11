@@ -8,16 +8,15 @@ import { invertMap } from './invertMap.ts'
 import type { PairwiseAlignment } from './mappings.ts'
 
 /**
- * Branded coordinate spaces. Every position in this plugin is a bare `number`,
- * but the *meaning* differs: a structure residue index is not interchangeable
- * with a transcript residue index or an alignment column, and mixing them is
- * the root cause of the off-by-one class of bugs. Branding makes the compiler
- * reject cross-space mixing; construct values with the helpers below at the
- * boundaries where raw numbers enter (molstar picks, hover events, features).
+ * Branded coordinate spaces. Every position is a plain `number` at runtime, but
+ * a structure residue index, a transcript residue index and an alignment column
+ * mean different things, and mixing them causes off-by-one bugs. The brands
+ * make the compiler reject mixing; wrap a raw number with the helpers below
+ * where it enters, such as a molstar pick, a hover event or a feature.
  *
- * Conventions: all are 0-based. StructurePos indexes the ungapped structure
- * sequence; TranscriptPos the ungapped transcript sequence; AlignmentCol a
- * column of the pairwise alignment (gaps included).
+ * All are 0-based. StructurePos indexes the ungapped structure sequence,
+ * TranscriptPos the ungapped transcript sequence, and AlignmentCol a column of
+ * the pairwise alignment, gaps included.
  */
 export type StructurePos = number & { readonly __brand: 'StructurePos' }
 export type TranscriptPos = number & { readonly __brand: 'TranscriptPos' }

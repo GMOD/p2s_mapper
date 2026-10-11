@@ -1,19 +1,14 @@
 /**
  * Which molstar trajectory parser a structure needs.
  *
- * Getting this wrong is not a graceful failure in either direction: parsing a
- * PDB file as mmCIF throws ("Unexpected token. Expected data_, loop_, or data
- * name"), and — worse — parsing an mmCIF as PDB *succeeds* and yields a model
- * with zero polymer entities and thousands of misread atoms, so the view loads
- * with no sequence, no alignment and no genome mapping, and nothing reports an
- * error.
+ * A wrong choice fails either way. Parsing a PDB file as mmCIF throws
+ * ("Unexpected token. Expected data_, loop_, or data name"). Parsing an mmCIF
+ * as PDB succeeds and yields a model with zero polymer entities and thousands of
+ * misread atoms, so the structure loads with no sequence, no alignment and no
+ * genome mapping, and with no error.
  *
- * So detection lives here and is applied as the default at every entry point,
- * rather than at one of them.
- *
- * The two names are the subset of molstar's `BuiltInTrajectoryFormat` a
- * structure loaded from a file or a url can be, spelled out rather than
- * imported so nothing here depends on molstar.
+ * The two names are the subset of molstar's `BuiltInTrajectoryFormat` that a
+ * structure file or URL can be, written out so nothing here imports molstar.
  */
 export type StructureFormat = 'pdb' | 'mmcif'
 
@@ -35,8 +30,7 @@ export function structureFileExtension(nameOrUrl: string) {
 
 /**
  * Format for a filename or URL. Unknown extensions fall back to mmCIF, which is
- * what every URL this plugin generates itself serves (AlphaFold and RCSB both
- * hand out `.cif`).
+ * what AlphaFold and RCSB serve (`.cif`).
  */
 export function structureFormatFromName(nameOrUrl: string): StructureFormat {
   return PDB_EXTENSIONS.has(structureFileExtension(nameOrUrl)) ? 'pdb' : 'mmcif'
@@ -49,10 +43,9 @@ export function isBinaryStructureUrl(url: string) {
 }
 
 /**
- * Format for structure text that arrived without a filename — an inline `data`
- * snapshot, a pasted file, or the PDB the plugin synthesizes from Foldseek Cα
- * coordinates. Sniffs the content, which is strictly more reliable than a name
- * and is the only signal available here.
+ * Format for structure text with no filename, such as inline data, a pasted
+ * file, or a PDB built by `caCoordsToPdb`. The content is more reliable than a
+ * name, and here it is the only signal.
  *
  * mmCIF is line-oriented and its first meaningful line is a `data_` block
  * header (comments and blank lines may precede it); PDB has none.

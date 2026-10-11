@@ -78,11 +78,11 @@ export async function fetchAlphaFoldModels(
 
 /**
  * The model to open for a gene's transcripts: one folded from exactly a
- * transcript's translation, canonical first, so the view maps it as an
- * identity; else the canonical model; else the longest isoform model.
+ * transcript's translation, canonical first, so every residue maps to itself;
+ * else the canonical model; else the longest isoform model.
  *
- * Takes any record of sequences, since the structure loader knows one
- * translation rather than a gene's isoforms.
+ * Takes any record of sequences, since a caller may know one translation rather
+ * than a gene's isoforms.
  */
 export function pickAlphaFoldModel(
   models: AlphaFoldModel[],
