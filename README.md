@@ -2,8 +2,11 @@
 
 Lines up a protein sequence with its 3D structure, residue by residue.
 
-- **In:** a protein sequence, and an AlphaFold or PDB structure
-- **Out:** which 3D residue each amino acid is, and back
+- **Input:** a protein sequence, and an AlphaFold or PDB structure
+- **Output:** which 3D residue each amino acid is, and back
+
+Functionality
+
 - Picks the right chain and flags a poor match
 - Finds structures for a gene
 - Places UniProt annotations on a PDB entry
@@ -209,19 +212,17 @@ const toStructure = makeUniProtPositionMap(mapping?.segments ?? [])
 toStructure(248) // 154: UniProt residue 248 is structure position 154
 ```
 
-## Pipeline
+## Graphical overview
 
 ![From a gene on the genome to a residue in 3D, and back](docs/img/pipeline.svg)
 
 ## Docs
 
 - [api.md](docs/api.md): every export, with its signature, types and an example
-- [pipeline.md](docs/pipeline.md): the flow above, step by step, and why chain
-  choice divides by the shorter sequence
-- [coordinates.md](docs/coordinates.md): the four ways a residue is numbered,
-  and which function converts between them
-- [faq.md](docs/faq.md): can I trust the mapping? What the package checks, and
-  what it leaves to you
+- [pipeline.md](docs/pipeline.md): step by step 'pipeline' overview
+- [coordinates.md](docs/coordinates.md): residue numbering systems and
+  conversion functions
+- [faq.md](docs/faq.md): FAQs... for example, can I trust this mapping?
 
 ## Pitfalls
 
