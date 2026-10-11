@@ -21,7 +21,7 @@ export interface AlignmentQuality {
   structureCoverage: number
   /** first and last transcript residue the alignment covers, 1-based
    * inclusive; 0 when nothing aligned. A structure is usually a fragment, so
-   * these say which part of the protein it contains. */
+   * these show which part of the protein it contains. */
   transcriptStart: number
   transcriptEnd: number
 }

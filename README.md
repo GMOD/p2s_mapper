@@ -4,7 +4,7 @@ Lines up a protein sequence with its 3D structure, residue by residue.
 
 - **In:** a protein sequence, and an AlphaFold or PDB structure
 - **Out:** which 3D residue each amino acid is, and back
-- Picks the right chain and warns on a poor match
+- Picks the right chain and flags a poor match
 - Finds structures for a gene
 - Places UniProt annotations on a PDB entry
 - With [g2p_mapper](https://github.com/GMOD/g2p_mapper): genome position ↔ 3D
@@ -209,7 +209,7 @@ const toStructure = makeUniProtPositionMap(mapping?.segments ?? [])
 toStructure(248) // 154: UniProt residue 248 is structure position 154
 ```
 
-## How it fits together
+## Pipeline
 
 ![From a gene on the genome to a residue in 3D, and back](docs/img/pipeline.svg)
 

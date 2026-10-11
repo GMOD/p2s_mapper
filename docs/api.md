@@ -1,8 +1,8 @@
 # API reference
 
-Every export, grouped by job, with its signature and an example. For how the
-pieces fit together, see [pipeline.md](pipeline.md); for the numbering rules,
-see [coordinates.md](coordinates.md).
+This page lists every export, grouped by task, with its signature and an
+example. For how the pieces fit together, see [pipeline.md](pipeline.md); for
+the numbering rules, see [coordinates.md](coordinates.md).
 
 Conventions:
 
@@ -11,8 +11,8 @@ Conventions:
 - Ranges are `{ start, end }`. A range of positions is half-open; a range of
   residue numbers (UniProt, author, "residues 102-292") is inclusive.
 - A `PairwiseAlignment` has **row 0 = transcript, row 1 = structure**.
-- Every network function takes an optional `FetchOptions` last, see
-  [Fetch helpers](#fetch-helpers).
+- Every network function takes an optional `FetchOptions` last (see
+  [Fetch helpers](#fetch-helpers)).
 
 `pnpm docs:api` generates each signature block from the compiler, between its
 `GENERATED` markers, and `pnpm test` fails when one is out of date.
@@ -274,7 +274,7 @@ function keepSharedStretches(pa: PairwiseAlignment): PairwiseAlignment
 `sharedResidueMap` maps a residue from one isoform to the other only inside a
 run of identical residues. The run must be at least 10 long, or at least 3 long
 with a gap or a sequence end on each side, which is how a short shared exon
-aligns. A single substitution between two kept runs maps too. A mutually
+aligns. A single substitution between two such runs maps too. A mutually
 exclusive exon (PKM's exons 9 and 10) therefore maps nothing, although it aligns
 column for column.
 
@@ -326,7 +326,7 @@ interface AlignmentQuality {
   structureCoverage: number
   /** first and last transcript residue the alignment covers, 1-based
    * inclusive; 0 when nothing aligned. A structure is usually a fragment, so
-   * these say which part of the protein it contains. */
+   * these show which part of the protein it contains. */
   transcriptStart: number
   transcriptEnd: number
 }
@@ -351,8 +351,9 @@ function describeCoveredRange(q: AlignmentQuality): string | undefined
 <!-- /GENERATED -->
 
 Local alignment picks the best-scoring stretch of two sequences, so identity
-over the aligned columns is high even for a chance match. `isLowSimilarity`
-judges `identityOverShorter` instead:
+over the aligned columns is high even for a chance match. `isLowSimilarity` uses
+`identityOverShorter` instead, with a floor that depends on the number of
+identical residues:
 
 - At 20 identical residues or more, the floor is 0.3.
 - Under 20, it rises to 0.8, since a short real match (a bound peptide) is
@@ -584,9 +585,9 @@ function stripAllStopCodons(seq: string): string
 
 Use `stripStopCodon` on anything you map. An interior `*` is a real codon (a
 mis-annotated CDS, a selenocysteine), and deleting it would shift every later
-residue against g2p_mapper's codon numbering. `stripAllStopCodons` is for a
-sequence sent to an outside search such as Foldseek, where `*` is not a valid
-character and no position depends on the result.
+residue out of step with g2p_mapper's codon numbering. `stripAllStopCodons` is
+for a sequence sent to an outside search such as Foldseek, where `*` is not a
+valid character and no position depends on the result.
 
 ## Chain choice
 
@@ -674,7 +675,8 @@ function interactionMatchesMappedEntity(
 The best match wins even when it is poor, so check it with
 [`isLowSimilarity`](#quality). The result is `undefined` only when there is
 nothing to map: an empty transcript, or no protein chain. Stop codons are
-stripped from both sides. [pipeline.md](pipeline.md#why-the-shorter-sequence)
+stripped from both sides.
+[pipeline.md](pipeline.md#why-the-score-divides-by-the-shorter-sequence)
 explains why the score divides by the shorter sequence.
 
 `alignTranscriptToEntity` scores one pair; use it when the user picks the chain.
@@ -1518,8 +1520,9 @@ function structureDisplayLabel(options: {
   `url` or inline `data` always wins. A `uniprotId` resolves to no URL, and
   outranks a `pdbId`, because `fetchAlphaFoldModels` decides which AlphaFold
   file to open.
-- `getPdbIdFromUrl` recognizes only the PDB archive's own hosts, so a user's
-  model that happens to be named `1abc.cif` does not pick up 1ABC's annotations.
+- `getPdbIdFromUrl` recognizes only the PDB archive's own hosts, so the package
+  never gives a user's model that happens to be named `1abc.cif` the annotations
+  of entry 1ABC.
 
 ### Foldseek hits
 
