@@ -1,3 +1,17 @@
+## [2.0.0](https://github.com/GMOD/p2s_mapper/compare/v1.4.0...v2.0.0) (2026-10-11)
+
+### Bug Fixes
+
+- Name the package as user agent outside a browser ([474b7b2](https://github.com/GMOD/p2s_mapper/commit/474b7b21abea96dce82a7d0d5a035bdc5c756e40))
+
+### Documentation
+
+- Rewrite README with usage; give api.md signatures, types and examples ([acf49b9](https://github.com/GMOD/p2s_mapper/commit/acf49b9155e6fde34439e0adecb480bbae6cfd82))
+
+### Features
+
+- **BREAKING** Read PDB entries and entry lists from RCSB instead of PDBe ([93f618a](https://github.com/GMOD/p2s_mapper/commit/93f618af1e80e1262256cceffa451a5c6a3579e9))
+
 ## [1.4.0](https://github.com/GMOD/p2s_mapper/compare/v1.3.0...v1.4.0) (2026-10-10)
 
 ### Features
