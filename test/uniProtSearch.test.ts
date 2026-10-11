@@ -94,16 +94,12 @@ describe('searchUniProtEntries', () => {
   })
 
   it('keeps the empty answer when the descendant search fails', async () => {
-    const logged = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     stubUniProt(url => ({ ok: !queryOf(url).includes('taxonomy_id') }))
     const result = await searchUniProtEntries({
       geneName: 'cdc2',
       organismId: 4896,
     })
     expect(result).toEqual({ entries: [], attemptedCount: 1, failedCount: 0 })
-    expect(logged).toHaveBeenCalledOnce()
   })
 
   it('does not ask the descendants when the taxon answers', async () => {
@@ -141,9 +137,7 @@ describe('searchUniProtEntries', () => {
   })
 
   it('counts the sources that failed so a partial outage can be reported', async () => {
-    const logged = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
+    const logged = vi.spyOn(console, 'error')
     stubUniProt(url => ({
       ok: !queryOf(url).startsWith('xref:'),
       results: [reviewedEntry('P04637', 'Homo sapiens')],
@@ -158,15 +152,10 @@ describe('searchUniProtEntries', () => {
     expect(result.attemptedCount).toBe(2)
     expect(result.failedCount).toBe(1)
     expect(result.entries.map(e => e.accession)).toEqual(['P04637'])
-    expect(logged.mock.calls[0]?.[0]).toBe(
-      'xref search failed for ENST00000123:',
-    )
+    expect(logged).not.toHaveBeenCalled()
   })
 
   it('does not count a gene-name failure nothing was waiting for', async () => {
-    const logged = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     stubUniProt(url => ({
       ok: queryOf(url).startsWith('xref:'),
       results: [reviewedEntry('P04637', 'Homo sapiens')],
@@ -180,11 +169,9 @@ describe('searchUniProtEntries', () => {
     // the xref resolved a reviewed entry, so the gene-name answer went unread
     expect(result.attemptedCount).toBe(1)
     expect(result.failedCount).toBe(0)
-    expect(logged.mock.calls[0]?.[0]).toBe('gene name search failed for TP53:')
   })
 
   it('throws when every source failed rather than reporting no entries', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     stubUniProt(() => ({ ok: false }))
     await expect(
       searchUniProtEntries({ recognizedIds: ['ENST00000123'] }),

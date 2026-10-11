@@ -111,7 +111,6 @@ async function searchByXref(
   try {
     return { entries: await searchUniProt(query, 10, opts), error: undefined }
   } catch (e) {
-    console.error(`xref search failed for ${id}:`, e)
     return { entries: [], error: e }
   }
 }
@@ -132,22 +131,18 @@ async function searchByGeneName(
     // are 284812. The descendants are asked only on a miss, because for a
     // species with reviewed subspecies entries (human and Neanderthal) they
     // turn one answer into two.
-    // The taxon itself has answered, so the wider question failing leaves
-    // that answer standing rather than turning an empty result into an error.
+    // When the descendant search fails, the taxon's own empty result stands
+    // rather than becoming an error.
     const entries =
       exact.length === 0 && organismId
         ? await searchUniProt(
             buildGeneNameQuery(geneName, organismId, 'taxonomy_id'),
             5,
             opts,
-          ).catch((e: unknown) => {
-            console.error(`descendant-taxon search failed for ${geneName}:`, e)
-            return exact
-          })
+          ).catch(() => exact)
         : exact
     return { entries, error: undefined }
   } catch (e) {
-    console.error(`gene name search failed for ${geneName}:`, e)
     return { entries: [], error: e }
   }
 }
