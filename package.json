@@ -25,6 +25,7 @@
     "clean": "rimraf dist esm",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "docs:api": "node scripts/api-doc.ts",
     "lint": "eslint --report-unused-disable-directives --max-warnings 0",
     "typecheck": "tsc --noEmit -p tsconfig.lint.json",
     "prebuild": "pnpm clean",

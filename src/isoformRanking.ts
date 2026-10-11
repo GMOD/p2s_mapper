@@ -22,11 +22,11 @@ export interface RankedIsoform {
 }
 
 export interface ClassifiedIsoforms {
-  // protein matches the structure residues, longest first
+  /** translates to exactly the structure's sequence, longest first */
   matches: RankedIsoform[]
-  // has a protein sequence but doesn't match the structure, best-aligning first
+  /** translates to something else, best-aligning first */
   nonMatches: RankedIsoform[]
-  // ids of the isoforms no protein sequence could be computed for
+  /** ids of the isoforms with no translation */
   noData: string[]
 }
 

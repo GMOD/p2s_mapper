@@ -3,7 +3,7 @@
 // keyword, the regex (Ensembl patterns cover human ENS, mouse ENSMUS, zebrafish
 // ENSDAR, etc.), and a human-readable label. Recognition, label rendering, and
 // xref-query building all derive from this list, so a new ID type is one entry.
-type DbType = 'ensembl' | 'refseq' | 'ccds' | 'hgnc' | 'geneid'
+export type DbType = 'ensembl' | 'refseq' | 'ccds' | 'hgnc' | 'geneid'
 
 const DB_ID_PATTERNS: { db: DbType; pattern: RegExp; label: string }[] = [
   { db: 'ensembl', pattern: /^ENS[A-Z]*G\d+/i, label: 'Ensembl gene' },

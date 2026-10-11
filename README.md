@@ -1,33 +1,212 @@
 # p2s_mapper
 
-Map a transcript's translation onto a protein structure.
+Find which residue of a 3D protein structure each amino acid of a transcript
+lands on, and back.
 
-- **Align** the transcript to the structure's sequence (Smith-Waterman or
-  Needleman-Wunsch, BLOSUM62)
-- **Convert coordinates** both ways between transcript, alignment, structure,
-  Mol\* and UniProt numbering
-- **Choose the chain** that best matches the gene's protein
-- **Use SIFTS** to place UniProt annotations and drop fusion-partner residues
-- **Find structures** through AlphaFold, 3D-Beacons, PDBe and UniProt
+Give it a transcript's translation and a structure, an AlphaFold model or a PDB
+entry. p2s_mapper picks the chain that is the gene's protein, aligns the two,
+and builds the lookups between transcript positions, structure positions and the
+residue ids a viewer such as Mol\* uses. It also finds structures for a gene,
+judges whether a match is real, and uses SIFTS to place UniProt annotations and
+drop the residues of a fusion partner.
 
-## Works with g2p_mapper
-
-p2s_mapper covers **protein ↔ structure**. The other half, **genome ↔ protein**,
-is [g2p_mapper](https://github.com/GMOD/g2p_mapper): it turns a transcript's CDS
-into per-codon genome positions, on either strand and across exon boundaries. It
-is p2s_mapper's only runtime dependency, and chaining the two takes you from a
-genome coordinate to a residue in 3D and back.
-
-Extracted from
-[jbrowse-plugin-protein3d](https://github.com/GMOD/jbrowse-plugin-protein3d),
-where we made the measurements behind the scoring rules. The package has no
-React, JBrowse or Mol\* dependency: a loaded Mol\* model reaches it through
-narrow structural interfaces.
+Pair it with [g2p_mapper](https://github.com/GMOD/g2p_mapper), which maps genome
+positions to protein positions, to go from a genome coordinate to a residue in
+3D. The package has no React, JBrowse or Mol\* dependency; it came out of
+[jbrowse-plugin-protein3d](https://github.com/GMOD/jbrowse-plugin-protein3d).
 
 ## Install
 
 ```
 npm install p2s_mapper
+```
+
+## Usage
+
+### Map a transcript onto a structure
+
+Pass the transcript's translation and the structure's chain sequences.
+`chooseMappedEntity` picks the chain, `isLowSimilarity` checks the match is not
+chance, and `makeCoordinateMapper` converts positions both ways.
+
+```ts
+import {
+  alignmentQuality,
+  chooseMappedEntity,
+  describeAlignmentQuality,
+  isLowSimilarity,
+  makeCoordinateMapper,
+  structurePos,
+  transcriptPos,
+} from 'p2s_mapper'
+
+// p53's N-terminus, and a structure holding a DNA strand and a tagged fragment
+const transcript = 'MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDP*'
+const chains = [
+  { seq: 'TTTCCTAGACTTGCCCAATTA', nucleicAcid: true },
+  { seq: 'GSHMSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQW' },
+]
+
+const picked = chooseMappedEntity(transcript, chains, 'smith_waterman')
+if (picked) {
+  picked.index // 1: the protein chain
+
+  const quality = alignmentQuality(picked.alignment)
+  isLowSimilarity(quality) // false
+  describeAlignmentQuality(quality)
+  // '98% identity over 40 of 43 structure residues'
+
+  const mapper = makeCoordinateMapper(picked.alignment)
+  mapper.transcriptToStructure(transcriptPos(16)) // 6
+  mapper.structureToTranscript(structurePos(6)) // 16
+  mapper.structureToTranscript(structurePos(0)) // undefined: the GSH tag
+}
+```
+
+Every position is 0-based. The two kinds are separate branded types, so passing
+a structure position where a transcript position belongs is a compile error.
+
+### From a genome position to a residue, and back
+
+g2p_mapper turns the transcript's CDS into genome ↔ protein tables; p2s_mapper
+carries a protein position on to the structure and to the `label_seq_id` Mol\*
+addresses residues by.
+
+```ts
+import { genomeToTranscriptSeqMapping } from 'g2p_mapper'
+import {
+  chooseMappedEntity,
+  codonGenomeSpan,
+  makeCoordinateMapper,
+  makeLabelSeqIdIndex,
+  residueNumber,
+  structurePos,
+  toLabelSeqIds,
+  transcriptPos,
+} from 'p2s_mapper'
+import type { Entity } from 'p2s_mapper'
+
+const transcript = 'MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDP*'
+const { g2p, p2gCodon } = genomeToTranscriptSeqMapping({
+  refName: 'chr17',
+  start: 1000,
+  end: 2117,
+  strand: 1,
+  subfeatures: [
+    { refName: 'chr17', start: 1000, end: 1060, type: 'CDS', phase: 0 },
+    { refName: 'chr17', start: 2000, end: 2117, type: 'CDS' },
+  ],
+})
+
+// normally from extractEntities(model); here the author numbering starts at 12
+const entity: Entity = {
+  entityId: '1',
+  seq: 'GSHMSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQW',
+  seqIds: Array.from({ length: 43 }, (_, i) => i + 1),
+  authSeqIds: Array.from({ length: 43 }, (_, i) => i + 12),
+  chains: ['A'],
+}
+const picked = chooseMappedEntity(transcript, [entity], 'smith_waterman')!
+const mapper = makeCoordinateMapper(picked.alignment)
+
+// genome -> structure
+const proteinPos = g2p[2000] // 20
+if (proteinPos !== undefined) {
+  const pos = mapper.transcriptToStructure(transcriptPos(proteinPos)) // 10
+  if (pos !== undefined) {
+    toLabelSeqIds(entity, [pos]) // [11]: what to highlight in Mol*
+    residueNumber(entity, pos) // 22: what to show the user
+  }
+}
+
+// a Mol* hover on label_seq_id 15 -> genome
+const hovered = makeLabelSeqIdIndex(entity).get(15) // 14
+if (hovered !== undefined) {
+  const t = mapper.structureToTranscript(structurePos(hovered)) // 24
+  if (t !== undefined) {
+    codonGenomeSpan(p2gCodon, t) // [2012, 2015]
+  }
+}
+```
+
+### With a structure loaded in Mol\*
+
+`extractEntities` reads each chain's sequence, ids and numbering from a loaded
+Mol\* model, through a narrow structural type rather than a Mol\* import.
+
+```ts
+import {
+  chooseMappedEntity,
+  extractEntities,
+  rangeToLabelSeqIds,
+} from 'p2s_mapper'
+import type { StructureModel } from 'p2s_mapper'
+
+// e.g. what plugin.builders.structure.createModel resolves to
+declare const model: StructureModel
+declare const transcript: string
+
+const entities = extractEntities(model) ?? []
+const picked = chooseMappedEntity(transcript, entities, 'smith_waterman')
+const entity = picked ? entities[picked.index] : undefined
+
+// the label_seq_ids of structure positions 10-19, for a Mol* selection
+rangeToLabelSeqIds(entity, { start: 10, end: 20 })
+```
+
+### Find a structure for a gene
+
+```ts
+import {
+  fetchAlphaFoldModels,
+  fetchExperimentalStructures,
+  getPdbStructureUrl,
+  pickAlphaFoldModel,
+  searchUniProtEntries,
+} from 'p2s_mapper'
+
+declare const translation: string
+
+const { entries } = await searchUniProtEntries({
+  recognizedIds: ['GeneID:7157', 'ENST00000269305'],
+  geneName: 'TP53',
+  organismId: 9606,
+})
+const accession = entries[0]?.accession // 'P04637'
+
+if (accession) {
+  // predicted: the model folded from this exact translation, else the canonical one
+  const models = await fetchAlphaFoldModels(accession)
+  const predicted = pickAlphaFoldModel(models, { tx1: { seq: translation } })
+
+  // experimental: PDBe entries, best coverage first
+  const [best] = await fetchExperimentalStructures(accession)
+  const url = predicted?.url ?? (best && getPdbStructureUrl(best.pdbId))
+}
+```
+
+Every network function takes `{ fetch?, signal? }` last, defaulting to
+`globalThis.fetch`, so a host can pass its own fetch and abort a stale request.
+
+### Place UniProt annotations on a PDB entry
+
+A PDB construct is usually a fragment, numbered differently from UniProt. SIFTS
+says how the two line up.
+
+```ts
+import {
+  chooseUniProtMappingForEntity,
+  fetchUniProtStructureMappings,
+  makeUniProtPositionMap,
+} from 'p2s_mapper'
+
+const mappings = await fetchUniProtStructureMappings('1tup')
+const mapping = chooseUniProtMappingForEntity(mappings, {
+  entityId: '3',
+  chains: ['A', 'B', 'C'],
+})
+const toStructure = makeUniProtPositionMap(mapping?.segments ?? [])
+toStructure(248) // 154: UniProt residue 248 is structure position 154
 ```
 
 ## How it fits together
@@ -36,22 +215,25 @@ npm install p2s_mapper
 
 ## Docs
 
-- [faq.md](docs/faq.md) — can I trust the mapping? What the package checks, and
-  what it leaves to you
-- [pipeline.md](docs/pipeline.md) — the flow above, step by step, and why chain
+- [api.md](docs/api.md): every export, with its signature, types and an example
+- [pipeline.md](docs/pipeline.md): the flow above, step by step, and why chain
   choice divides by the shorter sequence
-- [coordinates.md](docs/coordinates.md) — the four numberings of a residue and
+- [coordinates.md](docs/coordinates.md): the four numberings of a residue and
   the one route between each
-- [api.md](docs/api.md) — every export, grouped by job
+- [faq.md](docs/faq.md): can I trust the mapping? What the package checks, and
+  what it leaves to you
 
 ## Things to know first
 
-- Every coordinate in the API is **0-based**, branded by space so the compiler
-  rejects mixing them. See [coordinates.md](docs/coordinates.md).
+- Every coordinate is **0-based** and branded by space, so the compiler rejects
+  mixing them. UniProt positions and author residue numbers are 1-based. See
+  [coordinates.md](docs/coordinates.md).
 - A `PairwiseAlignment` has **row 0 = transcript, row 1 = structure**. Use the
   accessors, not indexes.
-- Network functions take `{ fetch?, signal? }` and default to
-  `globalThis.fetch`.
+- The best-matching chain always wins, even a poor match. Check it with
+  `isLowSimilarity` before trusting the mapping.
+- Cross into Mol\* only through `Entity.seqIds`: `label_seq_id` is not always
+  position + 1.
 
 ## License
 

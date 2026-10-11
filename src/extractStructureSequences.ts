@@ -20,32 +20,32 @@
  * So carry the real ids and convert through them.
  */
 export interface Entity {
+  /** mmCIF entity id, molstar's own bookkeeping */
   entityId: string
+  /** one letter per residue, observed or not */
   seq: string
+  /** molstar `label_seq_id` per position of `seq` */
   seqIds: number[]
-  /** author chain ids carrying this entity, e.g. ['A', 'B'] for a homodimer;
-   * what a user recognises from the PDB entry page, where the entity id is
-   * molstar's own bookkeeping */
+  /** author chain ids carrying this entity, e.g. ['A', 'B'] for a homodimer:
+   * what a user recognises from the PDB entry page */
   chains: string[]
-  /** DNA, RNA or a hybrid, by molstar's entity subtype. Its one-letter
-   * sequence spells amino acids too (A, C, G, T, U), so it has to be kept
-   * out of the transcript alignment rather than merely scoring low. */
+  /** DNA, RNA or a hybrid, by molstar's entity subtype. Its letters spell
+   * amino acids too (A, C, G, T, U), so it is kept out of the alignment
+   * rather than left to score low. */
   nucleicAcid?: boolean
-  /** `auth_seq_id` per position: the numbering the depositors chose, which
-   * for an RCSB entry is the one papers and UniProt cite (1TUP's position 154
-   * is R248) and what Mol*'s own hover label shows. Display only; every
-   * coordinate the plugin computes with stays a 0-based position, and molstar
-   * is addressed through `seqIds`. Absent when the model has no atomic
-   * hierarchy to read it from. See `residueNumber`. */
+  /** `auth_seq_id` per position: the depositors' numbering, which papers cite
+   * (1TUP's position 154 is R248) and Mol*'s hover shows. Display only;
+   * address Mol* through `seqIds`. Absent when the model has no atomic
+   * hierarchy. See `residueNumber`. */
   authSeqIds?: number[]
 }
 
-interface Column<T> {
+export interface Column<T> {
   rowCount: number
   value(row: number): T
 }
 
-interface StructureModel {
+export interface StructureModel {
   obj?: {
     data: {
       entities?: {

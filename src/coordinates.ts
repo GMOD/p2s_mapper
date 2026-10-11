@@ -19,10 +19,9 @@ import type { PairwiseAlignment } from './mappings.ts'
  * sequence; TranscriptPos the ungapped transcript sequence; AlignmentCol a
  * column of the pairwise alignment (gaps included).
  */
-type Branded<B extends string> = number & { readonly __brand: B }
-export type StructurePos = Branded<'StructurePos'>
-export type TranscriptPos = Branded<'TranscriptPos'>
-export type AlignmentCol = Branded<'AlignmentCol'>
+export type StructurePos = number & { readonly __brand: 'StructurePos' }
+export type TranscriptPos = number & { readonly __brand: 'TranscriptPos' }
+export type AlignmentCol = number & { readonly __brand: 'AlignmentCol' }
 
 export const structurePos = (n: number) => n as StructurePos
 export const transcriptPos = (n: number) => n as TranscriptPos

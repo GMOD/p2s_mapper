@@ -2,7 +2,7 @@
 // store the per-residue pLDDT in the B-factor column (B_iso_or_equiv), so the
 // first atom of each residue yields pLDDT for a predicted model and the
 // crystallographic B-factor for an experimental one.
-interface ConfidenceModel {
+export interface ConfidenceModel {
   obj?: {
     data: {
       atomicConformation: {

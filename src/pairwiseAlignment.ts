@@ -68,7 +68,7 @@ function getScore(a: string, b: string) {
 const GAP_OPEN = -10
 const GAP_EXTEND = -0.5
 
-interface AlignmentResult {
+export interface AlignmentResult {
   alignedSeq1: string
   alignedSeq2: string
   score: number
