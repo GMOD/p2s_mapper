@@ -37,6 +37,17 @@ export function getPdbStructureUrl(pdbId: string) {
   return `https://files.rcsb.org/download/${pdbId}.cif`
 }
 
+// A PDB id is four characters, the first a digit: 1TUP, 6ZIO. Checked before
+// a typed one reaches a fetch, so three characters on the way to four are not
+// a 404 apiece.
+export function isPdbId(value: string) {
+  return /^[1-9][A-Za-z0-9]{3}$/.test(value)
+}
+
+export function rcsbEntryUrl(pdbId: string) {
+  return `https://www.rcsb.org/structure/${pdbId.toUpperCase()}`
+}
+
 /**
  * Resolve the `{ pdbId }` shorthand to a concrete structure URL, so a
  * hand-authored snapshot or a short launch URL doesn't have to know RCSB's

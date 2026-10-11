@@ -1,4 +1,4 @@
-// SIFTS UniProt <-> PDB residue mapping.
+// UniProt <-> PDB residue mapping.
 //
 // UniProt feature coordinates are positions in the UniProt canonical sequence.
 // For an AlphaFold model that *is* the structure's own sequence, so a feature at
@@ -6,33 +6,23 @@
 // entry it is not: the deposited construct is usually a fragment, often with
 // tags or engineered residues, so the two numberings differ by a per-segment
 // offset (1TUP's p53 chain starts at UniProt 94; 6VXX's spike SEQRES 33 is
-// UniProt 14). SIFTS is the authoritative alignment between the two, published
-// per entity/chain by PDBe.
+// UniProt 14). The entry's own UniProt alignment, which `fetchPdbEntry` reads
+// from RCSB, is the authority on that correspondence.
 //
-// `residue_number` in the PDBe response is the 1-based index into the entity's
-// SEQRES, i.e. label_seq_id, which is exactly this plugin's structure-sequence
-// position + 1 (see applyLociInteractivity.ts for the other place that boundary
-// is crossed).
-
-import { isDefinitiveFailure, jsonfetch, timeout } from './fetchUtils.ts'
-
-import type { FetchOptions } from './fetchUtils.ts'
+// Structure positions here index the entity's SEQRES from 0, i.e.
+// label_seq_id - 1, which is this package's structure-sequence position.
 
 /** One contiguous UniProt <-> structure correspondence for a single entity.
  * `unp*` are 1-based UniProt positions; `struct*` are 0-based inclusive
- * structure-sequence positions, this plugin's native coordinate. */
+ * structure-sequence positions, this package's native coordinate. */
 export interface UniProtStructureSegment {
   entityId: string
-  /** author chain id, when the response names it */
+  /** author chain id, when the source names it */
   chainId?: string
   unpStart: number
   unpEnd: number
   structStart: number
   structEnd: number
-  /** the endpoints' author residue numbers, the numbering a paper cites and a
-   * Mol* hover shows; absent when the response omits them */
-  authorStart?: number
-  authorEnd?: number
 }
 
 export interface UniProtStructureMapping {
@@ -49,140 +39,11 @@ export interface UniProtStructureMapping {
  */
 export type MapUniProtPosition = (uniprotPos: number) => number | undefined
 
-export function pdbeSiftsUrl(pdbId: string) {
-  return `https://www.ebi.ac.uk/pdbe/api/mappings/uniprot/${pdbId.toLowerCase()}`
-}
-
-const SIFTS_RETRY_DELAYS_MS = [1000, 3000]
-// bounded, since a view reports itself loading until SIFTS answers
-const SIFTS_TIMEOUT_MS = 20_000
-
-/**
- * SIFTS for an entry, retried twice: one failed request would otherwise leave a
- * fusion construct mapped onto its partner for the whole session.
- *
- * A 4xx is not retried. PDBe answers 404 for an entry it has no UniProt
- * mapping for at all — a DNA-only or obsolete entry — and that answer cannot
- * change, so the retries only postponed it: measured 2026-09-16, `1hhb` and
- * `1bna` each took three requests and ~4.8s to say so, which a caller shows as
- * four and a half seconds of "resolving" for a structure that will never
- * resolve.
- */
-export async function fetchUniProtStructureMappings(
-  pdbId: string,
-  opts?: FetchOptions,
-) {
-  const { signal: caller, ...rest } = opts ?? {}
-  const signal = caller ?? undefined
-  const deadline = () =>
-    signal
-      ? AbortSignal.any([signal, AbortSignal.timeout(SIFTS_TIMEOUT_MS)])
-      : AbortSignal.timeout(SIFTS_TIMEOUT_MS)
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return parseUniProtStructureMappings(
-        await jsonfetch(pdbeSiftsUrl(pdbId), { ...rest, signal: deadline() }),
-      )
-    } catch (e) {
-      const delay = SIFTS_RETRY_DELAYS_MS[attempt]
-      // the caller's own abort is not a failure to retry either
-      if (delay === undefined || isDefinitiveFailure(e) || signal?.aborted) {
-        throw e
-      }
-      await timeout(delay, signal)
-    }
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function finiteNumber(value: unknown) {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
-}
-
-function residueNumber(endpoint: unknown) {
-  return isRecord(endpoint) ? finiteNumber(endpoint.residue_number) : undefined
-}
-
-function authorResidueNumber(endpoint: unknown) {
-  return isRecord(endpoint)
-    ? finiteNumber(endpoint.author_residue_number)
-    : undefined
-}
-
-function parseSegment(mapping: unknown): UniProtStructureSegment | undefined {
-  if (!isRecord(mapping)) {
-    return undefined
-  }
-  const entityId = finiteNumber(mapping.entity_id)
-  const unpStart = finiteNumber(mapping.unp_start)
-  const unpEnd = finiteNumber(mapping.unp_end)
-  const structStart = residueNumber(mapping.start)
-  const structEnd = residueNumber(mapping.end)
-  const authorStart = authorResidueNumber(mapping.start)
-  const authorEnd = authorResidueNumber(mapping.end)
-  return entityId === undefined ||
-    unpStart === undefined ||
-    unpEnd === undefined ||
-    structStart === undefined ||
-    structEnd === undefined
-    ? undefined
-    : {
-        entityId: String(entityId),
-        ...(typeof mapping.chain_id === 'string'
-          ? { chainId: mapping.chain_id }
-          : {}),
-        unpStart,
-        unpEnd,
-        // SEQRES/label_seq_id is 1-based, structure positions are 0-based
-        structStart: structStart - 1,
-        structEnd: structEnd - 1,
-        ...(authorStart === undefined ? {} : { authorStart }),
-        ...(authorEnd === undefined ? {} : { authorEnd }),
-      }
-}
-
-/**
- * Parses a PDBe `mappings/uniprot/{pdbId}` response into one entry per UniProt
- * accession. Unparseable segments are skipped rather than failing the whole
- * response — a chimera with one malformed segment still maps its other chains.
- * The response is keyed by pdb id, so the single entry is taken whatever its key.
- */
-export function parseUniProtStructureMappings(
-  json: unknown,
-): UniProtStructureMapping[] {
-  const entry = isRecord(json) ? Object.values(json)[0] : undefined
-  const uniprot = isRecord(entry) ? entry.UniProt : undefined
-  if (!isRecord(uniprot)) {
-    return []
-  }
-  const result: UniProtStructureMapping[] = []
-  for (const [accession, value] of Object.entries(uniprot)) {
-    const mappings = isRecord(value) ? value.mappings : undefined
-    const segments = Array.isArray(mappings)
-      ? mappings.map(parseSegment).filter(s => s !== undefined)
-      : []
-    if (segments.length > 0) {
-      result.push({
-        accession,
-        name:
-          isRecord(value) && typeof value.name === 'string'
-            ? value.name
-            : undefined,
-        segments,
-      })
-    }
-  }
-  return result
-}
-
 function coveredResidues(segments: UniProtStructureSegment[]) {
   return segments.reduce((a, s) => a + (s.structEnd - s.structStart + 1), 0)
 }
 
-/** The entity a SIFTS segment is matched against: its mmCIF id and the author
+/** The entity a segment is matched against: its mmCIF id and the author
  * chains carrying it. */
 export interface SegmentEntity {
   entityId: string
@@ -190,10 +51,10 @@ export interface SegmentEntity {
 }
 
 /**
- * The segments of one accession that describe this entity. SIFTS numbers
- * entities as the mmCIF does, and a PDB-format file loaded through Mol* numbers
- * them per chain (1H26.pdb's chain C is entity 2, which in SIFTS is cyclin A),
- * so a segment naming its chain is matched by chain.
+ * The segments of one accession that describe this entity. The mapping
+ * numbers entities as the mmCIF does, and a PDB-format file loaded through
+ * Mol* numbers them per chain (1H26.pdb's chain C is entity 2, which in the
+ * mmCIF is cyclin A), so a segment naming its chain is matched by chain.
  */
 function segmentsForEntity(
   mapping: UniProtStructureMapping,
@@ -240,10 +101,11 @@ const OWN_PSEUDOCOUNT = 5
 const MIN_OWN_IDENTITY = 0.5
 
 /**
- * Mapped structure positions that SIFTS assigns to a protein other than the
- * transcript's, on a chain that fuses two. Local alignment bridges a fusion
- * boundary, and on every GPCR fusion construct checked it scattered receptor
- * residues onto the partner, 33 of them onto T4 lysozyme in 2RH1.
+ * Mapped structure positions the entry's UniProt alignment assigns to a
+ * protein other than the transcript's, on a chain that fuses two. Local
+ * alignment bridges a fusion boundary, and on every GPCR fusion construct
+ * checked it scattered receptor residues onto the partner, 33 of them onto T4
+ * lysozyme in 2RH1.
  *
  * `mapped` is each mapped structure position and whether its pair is
  * identical. The transcript's own accession is the one whose covered positions
@@ -252,7 +114,7 @@ const MIN_OWN_IDENTITY = 0.5
  * fused to CDK2 covers 11 positions against 224 chance hits on the kinase, and
  * counting unmapped the peptide. Unless that accession reaches half identity
  * the transcript is taken to be neither protein, and nothing is unmapped.
- * Residues SIFTS assigns to no accession, such as tags, stay mapped.
+ * Residues assigned to no accession, such as tags, stay mapped.
  */
 export function fusionPartnerPositions(
   mappings: UniProtStructureMapping[],
@@ -297,8 +159,8 @@ export function fusionPartnerPositions(
   return partners
 }
 
-// SIFTS lists one mapping per *chain*, so the several chains of a homodimer
-// repeat the same entity-level correspondence. They collapse to one segment.
+// The mapping lists one segment per *chain*, so the several chains of a
+// homodimer repeat the same entity-level correspondence. They collapse to one.
 function dedupeSegments(segments: UniProtStructureSegment[]) {
   const seen = new Set<string>()
   return segments.filter(s => {

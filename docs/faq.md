@@ -99,8 +99,8 @@ package keeps both and never converts by adding an offset: 1TUP position 154
 reads 248, and haemoglobin's author residue 1 is UniProt residue 2.
 `Entity.authSeqIds` is display-only. See [coordinates.md](coordinates.md).
 
-For UniProt numbering, `makeUniProtPositionMap` uses the SIFTS mapping from
-PDBe, the authoritative source, instead of assuming an offset.
+For UniProt numbering, `makeUniProtPositionMap` uses the entry's own UniProt
+alignment, read from RCSB, instead of assuming an offset.
 
 ## What about fusion proteins and tags?
 
@@ -112,8 +112,8 @@ Fusions are where local alignment is most likely to mislead.
   time.
 - Local alignment can still bridge a gap onto the fusion partner. In 2RH1 it
   scattered 33 receptor residues onto T4 lysozyme. `fusionPartnerPositions`
-  finds the residues SIFTS assigns to another protein, and
-  `unmapStructurePositions` removes them from the alignment.
+  finds the residues the entry's UniProt alignment assigns to another protein,
+  and `unmapStructurePositions` removes them from the alignment.
 
 ## What if I pass an alignment from elsewhere?
 

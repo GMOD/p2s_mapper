@@ -16,14 +16,12 @@ export * from './extractStructureSequences.ts'
 export * from './extractPerResidueConfidence.ts'
 export * from './isoformRanking.ts'
 
-// SIFTS
+// UniProt mapping
 export * from './pdbUniProtMapping.ts'
-export * from './siftsNumbering.ts'
+export * from './pdbEntry.ts'
 
 // Structure sources
 export * from './alphaFoldModels.ts'
-export * from './pdbeBestStructures.ts'
-export * from './pdbeEntryMolecules.ts'
 export * from './structureSources.ts'
 export * from './uniProtSearch.ts'
 export * from './dbIds.ts'

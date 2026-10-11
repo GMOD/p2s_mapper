@@ -4,7 +4,7 @@ How a gene ends up mapped onto a 3D structure. The chart shows the main path:
 the gene's protein and a 3D structure are found independently, meet at the chain
 match, and the alignment becomes a lookup in both directions. The steps below
 add what the chart leaves out: the choice of structure source, the quality check
-and the optional SIFTS trim.
+and the optional fusion-partner trim.
 
 ![From a gene on the genome to a residue in 3D, and back](img/pipeline.svg)
 
@@ -28,8 +28,8 @@ app wires them together. The chart shows the order their dependencies force.
 2. **Look up the protein.** `searchUniProtEntries` finds the UniProt entry by
    the gene's database IDs or name.
 3. **Choose a source.** AlphaFold (`fetchAlphaFoldModels`) or lab-solved PDB
-   entries (`fetchExperimentalStructures`, `pdbeBestStructuresUrl`). The user
-   can also name a structure directly. See [api.md](api.md#structure-sources).
+   entries (`fetchExperimentalStructures`). The user can also name a structure
+   directly. See [api.md](api.md#structure-sources).
 4. **Read the chains.** The host loads the file in Mol\*, and `extractEntities`
    reads each chain's sequence through a narrow interface. This package never
    imports Mol\*.
@@ -53,11 +53,12 @@ app wires them together. The chart shows the order their dependencies force.
 6. **Check the match (advisory).** `alignmentQuality` and `isLowSimilarity` flag
    a weak match, the only place a poor best match is caught. Nothing blocks on
    it, so the host decides what to show.
-7. **Trim with SIFTS (optional, PDB only).** `fusionPartnerPositions` finds
-   residues PDBe assigns to a fused partner protein, and
-   `unmapStructurePositions` removes them. `makeUniProtPositionMap` places
-   UniProt annotations. The residue mapping itself comes from the alignment, not
-   from SIFTS.
+7. **Trim fusion partners (optional, PDB only).** `fetchPdbEntry` reads the
+   entry's UniProt alignment from RCSB; `fusionPartnerPositions` finds the
+   residues it assigns to a fused partner protein, and `unmapStructurePositions`
+   removes them. `makeUniProtPositionMap` places UniProt annotations. The
+   residue mapping itself comes from the package's alignment, not from the
+   entry's.
 8. **Build the lookup tables.** `makeCoordinateMapper` builds every conversion
    once from the alignment, branded by [coordinate space](coordinates.md).
 

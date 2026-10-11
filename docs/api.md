@@ -20,7 +20,7 @@ between its `GENERATED` markers, and `pnpm test` fails when one is stale.
 - [Alignment](#alignment)
 - [Coordinates](#coordinates)
 - [Chain choice](#chain-choice)
-- [SIFTS](#sifts)
+- [UniProt mapping](#uniprot-mapping)
 - [Structure sources](#structure-sources)
 - [URLs and formats](#urls-and-formats)
 - [Fetch helpers](#fetch-helpers)
@@ -240,8 +240,8 @@ function unmapStructurePositions(
   its pair is identical, so a host can flag the mismatches.
 - `unmapStructurePositions` takes positions out of their columns, so both rows
   still spell their sequences and those residues map to nothing. It returns the
-  same object when nothing changes. SIFTS trimming and `keepSharedStretches`
-  both work through it.
+  same object when nothing changes. Fusion-partner trimming and
+  `keepSharedStretches` both work through it.
 
 ### Two isoforms of one protein
 
@@ -1022,40 +1022,55 @@ structure residue, across a gap (1MH1 against Rac1 and Rac1b).
 translates to exactly, else the one `chooseMappedEntity` maps the longest
 isoform to. Never just the first chain, which on 1H26 is CDK2 rather than p53.
 
-## SIFTS
+## UniProt mapping
 
-SIFTS is PDBe's curated UniProt ↔ structure alignment. The residue mapping
-itself always comes from the package's own alignment; SIFTS places UniProt
-annotations, drops fusion partners and supplies author numbering.
+Every PDB entry carries an alignment of each polymer entity to UniProt, the
+correspondence SIFTS curates and RCSB republishes. The residue mapping itself
+always comes from the package's own alignment; the entry's alignment places
+UniProt annotations and drops fusion partners.
 
 ### Fetching
 
 ```ts
-import { fetchUniProtStructureMappings } from 'p2s_mapper'
+import { fetchPdbEntry, fetchUniProtStructureMappings } from 'p2s_mapper'
 
-const mappings = await fetchUniProtStructureMappings('1tup')
+const entry = await fetchPdbEntry('1tup')
+entry.proteinSequences // ['SSSVPSQKTYQ…']: protein entities only
+entry.mappings
 // [{
 //   accession: 'P04637',
 //   name: 'P53_HUMAN',
 //   segments: [
 //     { entityId: '3', chainId: 'A', unpStart: 94, unpEnd: 312,
-//       structStart: 0, structEnd: 218, authorStart: 94 },
+//       structStart: 0, structEnd: 218 },
 //     ...chains B and C
 //   ],
 // }]
+
+await fetchUniProtStructureMappings('1tup') // the mappings alone
 ```
 
-<!-- GENERATED: fetchUniProtStructureMappings parseUniProtStructureMappings pdbeSiftsUrl UniProtStructureMapping UniProtStructureSegment -->
+<!-- GENERATED: fetchPdbEntry fetchUniProtStructureMappings parsePdbEntry pdbEntryQuery PdbEntry UniProtStructureMapping UniProtStructureSegment graphqlFetch RCSB_DATA_GRAPHQL_URL -->
 
 ```ts
+function fetchPdbEntry(pdbId: string, opts?: FetchOptions): Promise<PdbEntry>
+
 function fetchUniProtStructureMappings(
   pdbId: string,
   opts?: FetchOptions,
 ): Promise<UniProtStructureMapping[]>
 
-function parseUniProtStructureMappings(json: unknown): UniProtStructureMapping[]
+function parsePdbEntry(data: unknown): PdbEntry | undefined
 
-function pdbeSiftsUrl(pdbId: string): string
+function pdbEntryQuery(pdbId: string): string
+
+interface PdbEntry {
+  /** every UniProt accession the entry's entities align to */
+  mappings: UniProtStructureMapping[]
+  /** one sequence per protein entity, in entity order; nucleic acids left
+   * out, since A, C, G, T and U are amino-acid letters too */
+  proteinSequences: string[]
+}
 
 interface UniProtStructureMapping {
   accession: string
@@ -1066,25 +1081,38 @@ interface UniProtStructureMapping {
 
 interface UniProtStructureSegment {
   entityId: string
-  /** author chain id, when the response names it */
+  /** author chain id, when the source names it */
   chainId?: string
   unpStart: number
   unpEnd: number
   structStart: number
   structEnd: number
-  /** the endpoints' author residue numbers, the numbering a paper cites and a
-   * Mol* hover shows; absent when the response omits them */
-  authorStart?: number
-  authorEnd?: number
 }
+
+function graphqlFetch(
+  url: string,
+  query: string,
+  variables: Record<string, unknown> | undefined,
+  opts?: FetchOptions,
+): Promise<unknown>
+
+const RCSB_DATA_GRAPHQL_URL: 'https://data.rcsb.org/graphql'
 ```
 
 <!-- /GENERATED -->
 
-The fetch retries twice, within a 20-second deadline, except on a 4xx: PDBe
-answers 404 for an entry with no UniProt mapping (DNA-only, obsolete), and that
-answer will not change. `struct*` are 0-based inclusive positions, the package's
-own; `unp*` are 1-based UniProt positions.
+One GraphQL call to RCSB's data API answers both the alignment and the entry's
+protein sequences, a few kB where reading them out of the structure file meant
+downloading a ribosome to label an isoform list. The fetch retries twice, within
+a 20-second deadline, except on a definitive answer: an id RCSB has no entry for
+throws a 404 `HttpError`, and a GraphQL error counts as a 400, because asking
+again gets the same answer. An entry nothing aligns to UniProt (DNA alone) has
+no mappings and is not an error. `struct*` are 0-based inclusive positions, the
+package's own; `unp*` are 1-based UniProt positions.
+
+Measured 2026-10-11 against PDBe's SIFTS API on 23 entries (1TUP, 2RH1, 4HHB,
+the 7K00 ribosome among them): every mapped residue agreed, and RCSB answered in
+3 s where PDBe took 24 s and failed one entry.
 
 ### Placing UniProt features
 
@@ -1133,7 +1161,7 @@ Pass the entity you mapped the transcript to; an `Entity` from `extractEntities`
 fits `SegmentEntity`. A heteromer maps each chain to its own accession, and when
 several accessions cover one entity (a chimera) the one covering the most
 residues wins. For an AlphaFold model, whose sequence is the UniProt sequence,
-use `identityUniProtPositionMap` instead of asking SIFTS.
+use `identityUniProtPositionMap` instead of asking for the entry.
 
 ### Trimming fusion partners
 
@@ -1172,57 +1200,11 @@ function fusionPartnerPositions(
 
 Local alignment bridges a fusion boundary: on 2RH1 it scatters 33 receptor
 residues onto T4 lysozyme. `fusionPartnerPositions` returns the mapped positions
-SIFTS gives a protein other than the transcript's. The transcript's own
-accession is the one whose covered positions are most often identical. Unless it
-reaches half identity, the transcript is taken to be neither protein and nothing
-is unmapped. Residues SIFTS gives no accession, such as tags, stay mapped.
-
-### Author numbering
-
-```ts
-import {
-  fetchUniProtStructureMappings,
-  segmentsForAccession,
-  toAuthorRange,
-} from 'p2s_mapper'
-
-const mappings = await fetchUniProtStructureMappings('2hhb')
-toAuthorRange(segmentsForAccession(mappings, 'P68871'), { start: 2, end: 10 })
-// { start: 1, end: 9, chain: 'B', shift: -1 }
-```
-
-<!-- GENERATED: segmentsForAccession toAuthorRange AuthorRange -->
-
-```ts
-function segmentsForAccession(
-  mappings: readonly {
-    accession: string
-    segments: UniProtStructureSegment[]
-  }[],
-  accession: string,
-): UniProtStructureSegment[]
-
-function toAuthorRange(
-  segments: readonly UniProtStructureSegment[],
-  range: { start: number; end: number },
-): AuthorRange | undefined
-
-interface AuthorRange {
-  start: number
-  end: number
-  chain: string
-  /** author number minus UniProt number in the chosen segment */
-  shift: number
-}
-```
-
-<!-- /GENERATED -->
-
-The author numbering is what a paper cites and a viewer lights a named residue
-by, and it need not match UniProt's: haemoglobin numbers from the mature
-protein, so author residue 1 is UniProt residue 2. The segment overlapping most
-of the range decides the shift. The result is `undefined` when no chain covers
-the range, or SIFTS gave no author numbers.
+the entry's alignment gives a protein other than the transcript's. The
+transcript's own accession is the one whose covered positions are most often
+identical. Unless it reaches half identity, the transcript is taken to be
+neither protein and nothing is unmapped. Residues given no accession, such as
+tags, stay mapped.
 
 ## Structure sources
 
@@ -1385,19 +1367,19 @@ accession AlphaFold never folded returns `[]`.
 translations, canonical first, so the view maps it as an identity. Failing that,
 it takes the canonical model, then the longest isoform model.
 
-### Experimental structures (3D-Beacons)
+### Experimental structures (RCSB)
 
 ```ts
 import { fetchExperimentalStructures, getPdbStructureUrl } from 'p2s_mapper'
 
 const structures = await fetchExperimentalStructures('P04637')
 structures[0]
-// { pdbId: '9r2q', method: 'ELECTRON MICROSCOPY', resolution: 3.2,
-//   start: 1, end: 393, coverage: 1 }
+// { pdbId: '8r1f', method: 'EM', resolution: 3.1,
+//   start: 1, end: 393, coverage: 1, chains: ['C'] }
 const url = structures[0] && getPdbStructureUrl(structures[0].pdbId)
 ```
 
-<!-- GENERATED: fetchExperimentalStructures parseExperimentalStructures beaconsSummaryUrl ExperimentalStructure -->
+<!-- GENERATED: fetchExperimentalStructures ExperimentalStructure parseEntityAlignments EntityAlignment parseEntityDetails EntityDetails experimentalStructures entityAlignmentsQuery ENTITY_DETAILS_QUERY RCSB_SEQUENCE_COORDINATES_URL -->
 
 ```ts
 function fetchExperimentalStructures(
@@ -1405,12 +1387,9 @@ function fetchExperimentalStructures(
   opts?: FetchOptions,
 ): Promise<ExperimentalStructure[]>
 
-function parseExperimentalStructures(json: unknown): ExperimentalStructure[]
-
-function beaconsSummaryUrl(uniprotId: string): string
-
 interface ExperimentalStructure {
   pdbId: string
+  /** RCSB's name for it: 'X-ray', 'EM', 'NMR', ... */
   method: string
   /** Å; absent for NMR and some EM entries */
   resolution?: number
@@ -1419,74 +1398,55 @@ interface ExperimentalStructure {
   end: number
   /** fraction of the UniProt sequence the entry covers, 0..1 */
   coverage: number
-}
-```
-
-<!-- /GENERATED -->
-
-Every PDBe entry mapped to the accession, best coverage first and sharpest
-resolution within a tie, in one CORS-enabled call. Predictions and SASBDB's
-scattering fits are left out: a prediction comes from AlphaFold's own API, and a
-scattering fit has no residue mapping. The call asks for the unfiltered summary
-and retries once, because the `?provider=pdbe` form 404s intermittently. It is
-best-effort: an unreachable API returns `[]`.
-
-### PDBe
-
-```ts
-import {
-  isPdbId,
-  jsonfetch,
-  parseBestStructures,
-  parseEntryMolecules,
-  pdbeBestStructuresUrl,
-  pdbeEntryMoleculesUrl,
-} from 'p2s_mapper'
-
-const best = parseBestStructures(
-  await jsonfetch(pdbeBestStructuresUrl('P04637')),
-)
-best[0]?.chains // ['K', 'L', 'M', 'N']: one row per entry, chains collapsed
-
-parseEntryMolecules(await jsonfetch(pdbeEntryMoleculesUrl('1tup')))
-// ['SSSVPSQKTYQGSYGFRLGF…']: protein entities only
-
-isPdbId('1tup') // true
-isPdbId('1tu') // false, so a half-typed id never reaches a fetch
-```
-
-<!-- GENERATED: pdbeBestStructuresUrl parseBestStructures PdbStructureEntry pdbeEntryMoleculesUrl parseEntryMolecules isPdbId -->
-
-```ts
-function pdbeBestStructuresUrl(uniprotId: string): string
-
-function parseBestStructures(json: unknown): PdbStructureEntry[]
-
-interface PdbStructureEntry {
-  pdbId: string
-  experimentalMethod: string
-  /** Å; absent for NMR and some EM entries */
-  resolution?: number
-  /** 1-based inclusive UniProt positions the entry covers */
-  unpStart: number
-  unpEnd: number
-  /** share of the UniProt sequence the entry covers, 0..1 */
-  coverage: number
+  /** author chain ids carrying the protein */
   chains: string[]
 }
 
-function pdbeEntryMoleculesUrl(pdbId: string): string
+function parseEntityAlignments(data: unknown): EntityAlignment[]
 
-function parseEntryMolecules(json: unknown): string[]
+interface EntityAlignment {
+  /** RCSB's id, "1TUP_3" */
+  entityId: string
+  pdbId: string
+  start: number
+  end: number
+  coverage: number
+}
 
-function isPdbId(value: string): boolean
+function parseEntityDetails(data: unknown): Map<string, EntityDetails>
+
+interface EntityDetails {
+  method: string
+  resolution?: number
+  chains: string[]
+}
+
+function experimentalStructures(
+  alignments: EntityAlignment[],
+  details: ReadonlyMap<string, EntityDetails>,
+): ExperimentalStructure[]
+
+function entityAlignmentsQuery(uniprotId: string): string
+
+const ENTITY_DETAILS_QUERY: 'query($ids: [String!]!) { polymer_entities(entity_ids: $ids) {\n  rcsb_id\n  rcsb_polymer_entity_container_identifiers { auth_asym_ids }\n  entry { rcsb_entry_info { experimental_method resolution_combined } }\n} }'
+
+const RCSB_SEQUENCE_COORDINATES_URL: 'https://sequence-coordinates.rcsb.org/graphql'
 ```
 
 <!-- /GENERATED -->
 
-These are URL builders and parsers, so the host does the fetching.
-`parseEntryMolecules` returns an entry's protein sequences from a few kB of
-JSON, enough to rank isoforms before downloading the whole structure.
+Every PDB entry RCSB aligns to the accession, best coverage first and sharpest
+resolution within a tie, with the chains carrying the protein. Two CORS-enabled
+calls: the sequence-coordinates API lists the aligned entities with the UniProt
+range each covers, and the data API answers their entries' method, resolution
+and chains in batches of a thousand. RCSB's computed models (`AF_…`) are left
+out, since a prediction comes from AlphaFold's own API. An accession with no
+entry, or one RCSB does not know, is `[]`; an isoform accession is asked as its
+entry.
+
+Measured 2026-10-11: for TP53 the two calls took 1.3 s; 3D-Beacons took 3.7 s,
+PDBe's best_structures 14 s and timed out on HBB, and 3D-Beacons listed no
+structure at all for BRCA1 that RCSB and PDBe both had 33 for.
 
 ## URLs and formats
 
@@ -1607,6 +1567,7 @@ a hit that has no downloadable structure.
 
 ```ts
 import {
+  isPdbId,
   rcsbEntryUrl,
   uniprotEntryUrl,
   uniprotFastaUrl,
@@ -1617,9 +1578,11 @@ uniprotGffUrl('P04637') // 'https://rest.uniprot.org/uniprotkb/P04637.gff'
 uniprotFastaUrl('P04637') // 'https://rest.uniprot.org/uniprotkb/P04637.fasta'
 uniprotEntryUrl('P04637') // 'https://www.uniprot.org/uniprotkb/P04637/entry'
 rcsbEntryUrl('1tup') // 'https://www.rcsb.org/structure/1TUP'
+isPdbId('1tup') // true
+isPdbId('1tu') // false, so a half-typed id never reaches a fetch
 ```
 
-<!-- GENERATED: uniprotGffUrl uniprotFastaUrl uniprotEntryUrl rcsbEntryUrl -->
+<!-- GENERATED: uniprotGffUrl uniprotFastaUrl uniprotEntryUrl rcsbEntryUrl isPdbId -->
 
 ```ts
 function uniprotGffUrl(uniprotId: string): string
@@ -1629,6 +1592,8 @@ function uniprotFastaUrl(uniprotId: string): string
 function uniprotEntryUrl(uniprotId: string): string
 
 function rcsbEntryUrl(pdbId: string): string
+
+function isPdbId(value: string): boolean
 ```
 
 <!-- /GENERATED -->

@@ -7,8 +7,8 @@ Give it a transcript's translation and a structure, an AlphaFold model or a PDB
 entry. p2s_mapper picks the chain that is the gene's protein, aligns the two,
 and builds the lookups between transcript positions, structure positions and the
 residue ids a viewer such as Mol\* uses. It also finds structures for a gene,
-judges whether a match is real, and uses SIFTS to place UniProt annotations and
-drop the residues of a fusion partner.
+judges whether a match is real, and uses a PDB entry's UniProt alignment to
+place UniProt annotations and drop the residues of a fusion partner.
 
 Pair it with [g2p_mapper](https://github.com/GMOD/g2p_mapper), which maps genome
 positions to protein positions, to go from a genome coordinate to a residue in
@@ -179,7 +179,7 @@ if (accession) {
   const models = await fetchAlphaFoldModels(accession)
   const predicted = pickAlphaFoldModel(models, { tx1: { seq: translation } })
 
-  // experimental: PDBe entries, best coverage first
+  // experimental: PDB entries, best coverage first
   const [best] = await fetchExperimentalStructures(accession)
   const url = predicted?.url ?? (best && getPdbStructureUrl(best.pdbId))
 }
@@ -190,8 +190,8 @@ Every network function takes `{ fetch?, signal? }` last, defaulting to
 
 ### Place UniProt annotations on a PDB entry
 
-A PDB construct is usually a fragment, numbered differently from UniProt. SIFTS
-says how the two line up.
+A PDB construct is usually a fragment, numbered differently from UniProt. The
+entry's UniProt alignment, read from RCSB, says how the two line up.
 
 ```ts
 import {

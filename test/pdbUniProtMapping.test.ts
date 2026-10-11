@@ -1,151 +1,43 @@
-import { describe, expect, it, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 
 import {
   chooseUniProtMappingForEntity,
-  fetchUniProtStructureMappings,
   fusionPartnerPositions,
   identityUniProtPositionMap,
   makeUniProtPositionMap,
-  parseUniProtStructureMappings,
-  pdbeSiftsUrl,
 } from '../src/index.ts'
 
-// Abridged real responses from
-// https://www.ebi.ac.uk/pdbe/api/mappings/uniprot/{1tup,4hhb}
+import type { UniProtStructureMapping } from '../src/index.ts'
 
-// p53 DNA-binding domain: one entity, UniProt 94 aligns to SEQRES 1, and the
-// two extra chains repeat the same entity-level correspondence.
-const SIFTS_1TUP = {
-  '1tup': {
-    UniProt: {
-      P04637: {
-        name: 'P53_HUMAN',
-        mappings: [
-          {
-            entity_id: 3,
-            chain_id: 'A',
-            unp_start: 94,
-            unp_end: 312,
-            start: { residue_number: 1, author_residue_number: 94 },
-            end: { residue_number: 219, author_residue_number: null },
-          },
-          {
-            entity_id: 3,
-            chain_id: 'B',
-            unp_start: 94,
-            unp_end: 312,
-            start: { residue_number: 1, author_residue_number: null },
-            end: { residue_number: 219, author_residue_number: null },
-          },
-        ],
-      },
-    },
-  },
-}
-
-// Hemoglobin: a heteromer where each entity maps to a different accession.
-const SIFTS_4HHB = {
-  '4hhb': {
-    UniProt: {
-      P69905: {
-        name: 'HBA_HUMAN',
-        mappings: [
-          {
-            entity_id: 1,
-            chain_id: 'A',
-            unp_start: 2,
-            unp_end: 142,
-            start: { residue_number: 1 },
-            end: { residue_number: 141 },
-          },
-        ],
-      },
-      P68871: {
-        name: 'HBB_HUMAN',
-        mappings: [
-          {
-            entity_id: 2,
-            chain_id: 'B',
-            unp_start: 2,
-            unp_end: 147,
-            start: { residue_number: 1 },
-            end: { residue_number: 146 },
-          },
-        ],
-      },
-    },
-  },
-}
-
-test('sifts url is lowercased', () => {
-  expect(pdbeSiftsUrl('1TUP')).toBe(
-    'https://www.ebi.ac.uk/pdbe/api/mappings/uniprot/1tup',
-  )
-})
-
-test('parses segments into 0-based structure positions', () => {
-  const [mapping, ...rest] = parseUniProtStructureMappings(SIFTS_1TUP)
-  expect(rest).toEqual([])
-  expect(mapping?.accession).toBe('P04637')
-  expect(mapping?.name).toBe('P53_HUMAN')
-  expect(mapping?.segments).toEqual([
-    {
+// 1TUP's p53 chain: SEQRES 1 is UniProt 94, repeated on chains A, B and C
+const P53_1TUP: UniProtStructureMapping[] = [
+  {
+    accession: 'P04637',
+    name: 'P53_HUMAN',
+    segments: ['A', 'B', 'C'].map(chainId => ({
       entityId: '3',
-      chainId: 'A',
+      chainId,
       unpStart: 94,
       unpEnd: 312,
       structStart: 0,
       structEnd: 218,
-      authorStart: 94,
-    },
-    {
-      entityId: '3',
-      chainId: 'B',
-      unpStart: 94,
-      unpEnd: 312,
-      structStart: 0,
-      structEnd: 218,
-    },
-  ])
-})
-
-const P53_1TUP = { entityId: '3', chains: ['A', 'B', 'C'] }
-
-test('picks the accession for the mapped entity of a heteromer', () => {
-  const mappings = parseUniProtStructureMappings(SIFTS_4HHB)
-  const entity = (entityId: string, chains: string[]) => ({ entityId, chains })
-  expect(
-    chooseUniProtMappingForEntity(mappings, entity('1', ['A', 'C']))?.accession,
-  ).toBe('P69905')
-  expect(
-    chooseUniProtMappingForEntity(mappings, entity('2', ['B', 'D']))?.accession,
-  ).toBe('P68871')
-  expect(
-    chooseUniProtMappingForEntity(mappings, entity('3', ['E'])),
-  ).toBeUndefined()
-  expect(chooseUniProtMappingForEntity(mappings, undefined)).toBeUndefined()
-})
-
-// Mol* numbers a PDB-format file's entities per chain: 4HHB.pdb's chain B can
-// be entity 3, which in SIFTS is nothing. The chain id still names it.
-test('matches segments by chain, not by the entity number a PDB file was given', () => {
-  const mappings = parseUniProtStructureMappings(SIFTS_4HHB)
-  expect(
-    chooseUniProtMappingForEntity(mappings, { entityId: '3', chains: ['B'] })
-      ?.accession,
-  ).toBe('P68871')
-})
+    })),
+  },
+]
+const P53_ENTITY = { entityId: '3', chains: ['A', 'B', 'C'] }
 
 test('collapses the repeated chains of a homomer to one segment', () => {
-  const mappings = parseUniProtStructureMappings(SIFTS_1TUP)
   expect(
-    chooseUniProtMappingForEntity(mappings, P53_1TUP)?.segments,
+    chooseUniProtMappingForEntity(P53_1TUP, P53_ENTITY)?.segments,
   ).toHaveLength(1)
+  expect(chooseUniProtMappingForEntity(P53_1TUP, undefined)).toBeUndefined()
+  expect(
+    chooseUniProtMappingForEntity(P53_1TUP, { entityId: '1', chains: ['E'] }),
+  ).toBeUndefined()
 })
 
 test('maps p53 uniprot positions onto 1TUP structure positions', () => {
-  const mappings = parseUniProtStructureMappings(SIFTS_1TUP)
-  const mapping = chooseUniProtMappingForEntity(mappings, P53_1TUP)
+  const mapping = chooseUniProtMappingForEntity(P53_1TUP, P53_ENTITY)
   const map = makeUniProtPositionMap(mapping!.segments)
 
   // UniProt 94 is the first modeled residue, i.e. structure position 0
@@ -165,36 +57,22 @@ test('identity map is used for alphafold models', () => {
   expect(identityUniProtPositionMap(250)).toBe(249)
 })
 
-test('tolerates malformed and empty payloads', () => {
-  expect(parseUniProtStructureMappings(undefined)).toEqual([])
-  expect(parseUniProtStructureMappings({})).toEqual([])
-  expect(parseUniProtStructureMappings({ '1abc': {} })).toEqual([])
+test('a segment without a chain matches by entity id', () => {
+  const mappings: UniProtStructureMapping[] = [
+    {
+      accession: 'P1',
+      segments: [
+        { entityId: '2', unpStart: 1, unpEnd: 9, structStart: 0, structEnd: 8 },
+      ],
+    },
+  ]
   expect(
-    parseUniProtStructureMappings({ '1abc': { UniProt: { P1: {} } } }),
-  ).toEqual([])
-  // a segment missing its residue numbers is skipped, the good one survives
+    chooseUniProtMappingForEntity(mappings, { entityId: '2', chains: ['Z'] })
+      ?.accession,
+  ).toBe('P1')
   expect(
-    parseUniProtStructureMappings({
-      '1abc': {
-        UniProt: {
-          P1: {
-            mappings: [
-              { entity_id: 1, unp_start: 1, unp_end: 2, start: {}, end: {} },
-              {
-                entity_id: 1,
-                unp_start: 5,
-                unp_end: 6,
-                start: { residue_number: 1 },
-                end: { residue_number: 2 },
-              },
-            ],
-          },
-        },
-      },
-    })[0]?.segments,
-  ).toEqual([
-    { entityId: '1', unpStart: 5, unpEnd: 6, structStart: 0, structEnd: 1 },
-  ])
+    chooseUniProtMappingForEntity(mappings, { entityId: '1', chains: ['Z'] }),
+  ).toBeUndefined()
 })
 
 test('a gapped multi-segment mapping maps each segment by its own offset', () => {
@@ -209,8 +87,8 @@ test('a gapped multi-segment mapping maps each segment by its own offset', () =>
   expect(map(30)).toBeUndefined()
 })
 
-// 2RH1's SIFTS: ADRB2 on SEQRES 8-237 and 399-500, T4 lysozyme spliced in at
-// 238-398 (0-based below). The alignment scattered ICL3 onto the lysozyme.
+// 2RH1: ADRB2 on SEQRES 8-237 and 399-500, T4 lysozyme spliced in at 238-398
+// (0-based below). The alignment scattered ICL3 onto the lysozyme.
 const SEGMENTS_2RH1 = [
   {
     accession: 'P07550',
@@ -256,7 +134,13 @@ function pairs(identical: number[], different: number[] = []) {
   ])
 }
 
-test('unmaps the positions SIFTS gives the fusion partner, and nothing SIFTS leaves unassigned', () => {
+test('the chimera picks the accession covering the most residues', () => {
+  expect(chooseUniProtMappingForEntity(SEGMENTS_2RH1, CHIMERA)?.accession).toBe(
+    'P07550',
+  )
+})
+
+test('unmaps the positions given to the fusion partner, and nothing left unassigned', () => {
   const icl3OnLysozyme = range(237, 270)
   const mapped = pairs([...range(0, 237), ...range(398, 500)], icl3OnLysozyme)
   expect([...fusionPartnerPositions(SEGMENTS_2RH1, CHIMERA, mapped)]).toEqual(
@@ -317,78 +201,13 @@ test("a short product fused to a long partner keeps its residues, and loses the 
   expect(partners.size).toBe(chance.length)
 })
 
-// A PDB-format file whose entity SIFTS describes some other chain, or a
-// transcript that is neither protein: no accession reaches half identity over
-// what it covers, so none is trusted
+// A PDB-format file whose entity the mapping describes as some other chain,
+// or a transcript that is neither protein: no accession reaches half identity
+// over what it covers, so none is trusted
 test('unmaps nothing when no accession is half identical over what it covers', () => {
   const mapped = pairs(
     range(0, 500).filter(p => p % 4 === 0),
     range(0, 500).filter(p => p % 4 !== 0),
   )
   expect(fusionPartnerPositions(SEGMENTS_2RH1, CHIMERA, mapped).size).toBe(0)
-})
-
-// The retry policy. `fetchUniProtStructureMappings` retries twice at 1s and 3s
-// because one dropped request would leave a fusion construct mapped onto its
-// partner for the rest of a session — but a 4xx is the server declining, not
-// failing, and waiting 4s to repeat it costs a caller four seconds of
-// "resolving" for a structure that will never resolve.
-describe('fetchUniProtStructureMappings retry policy', () => {
-  const response = (status: number, body: unknown) =>
-    ({
-      ok: status >= 200 && status < 300,
-      status,
-      statusText: '',
-      json: () => Promise.resolve(body),
-      text: () => Promise.resolve(''),
-    }) as unknown as Response
-
-  it('does not retry a 404, which PDBe uses for an entry it has no mapping for', async () => {
-    const fetch = vi.fn().mockResolvedValue(response(404, {}))
-    await expect(
-      fetchUniProtStructureMappings('1bna', { fetch }),
-    ).rejects.toThrow(/404/)
-    expect(fetch).toHaveBeenCalledTimes(1)
-  })
-
-  it('does not retry any other 4xx either', async () => {
-    const fetch = vi.fn().mockResolvedValue(response(400, {}))
-    await expect(
-      fetchUniProtStructureMappings('nonsense', { fetch }),
-    ).rejects.toThrow()
-    expect(fetch).toHaveBeenCalledTimes(1)
-  })
-
-  it('still retries a 500, which may not be the same answer twice', async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValueOnce(response(500, {}))
-      .mockResolvedValueOnce(response(200, SIFTS_1TUP))
-    const mappings = await fetchUniProtStructureMappings('1tup', { fetch })
-    expect(fetch).toHaveBeenCalledTimes(2)
-    expect(mappings.map(m => m.accession)).toEqual(['P04637'])
-  })
-
-  it('gives up after two retries', async () => {
-    const fetch = vi.fn().mockResolvedValue(response(503, {}))
-    await expect(
-      fetchUniProtStructureMappings('1tup', { fetch }),
-    ).rejects.toThrow()
-    expect(fetch).toHaveBeenCalledTimes(3)
-  })
-
-  it('does not retry once the caller has aborted', async () => {
-    const controller = new AbortController()
-    const fetch = vi.fn().mockImplementation(() => {
-      controller.abort()
-      return Promise.resolve(response(500, {}))
-    })
-    await expect(
-      fetchUniProtStructureMappings('1tup', {
-        fetch,
-        signal: controller.signal,
-      }),
-    ).rejects.toThrow()
-    expect(fetch).toHaveBeenCalledTimes(1)
-  })
 })

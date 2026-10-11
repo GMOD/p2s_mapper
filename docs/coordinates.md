@@ -43,5 +43,5 @@ Every crossing goes through one of:
 
 ## UniProt positions
 
-UniProt positions are 1-based. `pdbUniProtMapping` converts them with SIFTS
-rather than assuming any offset.
+UniProt positions are 1-based. `makeUniProtPositionMap` converts them with the
+entry's own UniProt alignment rather than assuming any offset.

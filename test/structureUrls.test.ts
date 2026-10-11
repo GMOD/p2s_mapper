@@ -6,9 +6,28 @@ import {
   getPdbStructureUrl,
   getStructureUrlFromTarget,
   getUniprotIdFromAlphaFoldTarget,
+  isPdbId,
+  rcsbEntryUrl,
   resolveStructureUrl,
   structureDisplayLabel,
 } from '../src/index.ts'
+
+test('a PDB ID is four characters beginning with a digit', () => {
+  expect(isPdbId('1TUP')).toBe(true)
+  expect(isPdbId('6zio')).toBe(true)
+})
+
+test('a prefix on the way to a PDB ID is not one, so it never reaches a fetch', () => {
+  expect(isPdbId('1TU')).toBe(false)
+  expect(isPdbId('1TUPX')).toBe(false)
+  expect(isPdbId('0TUP')).toBe(false)
+  expect(isPdbId('ATUP')).toBe(false)
+  expect(isPdbId('')).toBe(false)
+})
+
+test('the RCSB entry page is uppercase', () => {
+  expect(rcsbEntryUrl('1tup')).toBe('https://www.rcsb.org/structure/1TUP')
+})
 
 // target names as a live Foldseek search for p53 returned them
 test('a Foldseek pdb100 hit opens its RCSB entry, not a CA trace', () => {
