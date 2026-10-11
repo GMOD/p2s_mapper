@@ -195,6 +195,16 @@ function render(checker: ts.TypeChecker, symbol: ts.Symbol) {
   throw new Error(`cannot render ${name} (${ts.SyntaxKind[decl.kind]})`)
 }
 
+function deprecationNote(symbol: ts.Symbol) {
+  const decl = symbol.declarations?.[0]
+  const tag = decl && ts.getJSDocDeprecatedTag(decl)
+  if (!tag) {
+    return ''
+  }
+  const reason = ts.getTextOfJSDocComment(tag.comment)
+  return `/** @deprecated${reason ? ` ${reason}` : ''} */\n`
+}
+
 export async function renderApiDoc(markdown: string) {
   const { checker, symbols } = loadProgram()
   const filled = markdown.replaceAll(
@@ -208,12 +218,11 @@ export async function renderApiDoc(markdown: string) {
           if (!symbol) {
             throw new Error(`${n} is not exported from src/index.ts`)
           }
-          return render(
-            checker,
+          const target =
             symbol.flags & ts.SymbolFlags.Alias
               ? checker.getAliasedSymbol(symbol)
-              : symbol,
-          )
+              : symbol
+          return deprecationNote(target) + render(checker, target)
         })
       return `${open}\n\`\`\`ts\n${declarations.join('\n\n')}\n\`\`\`\n\n${close}`
     },

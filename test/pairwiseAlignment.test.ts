@@ -3,10 +3,16 @@ import { expect, test } from 'vitest'
 import {
   MAX_ALIGNMENT_CELLS,
   alignmentTooLarge,
+  alignSequences,
   needlemanWunsch,
   runLocalAlignment,
   smithWaterman,
 } from '../src/index.ts'
+
+test('runLocalAlignment is a deprecated alias of alignSequences', () => {
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  expect(runLocalAlignment).toBe(alignSequences)
+})
 
 test('needlemanWunsch - identical sequences', () => {
   const result = needlemanWunsch('ACGT', 'ACGT')
@@ -44,8 +50,8 @@ test('smithWaterman - local alignment finds best match', () => {
   expect(result.alignedSeq1.length).toBe(result.alignedSeq2.length)
 })
 
-test('runLocalAlignment - returns PairwiseAlignment format', () => {
-  const result = runLocalAlignment('MKAA', 'MKAA', 'needleman_wunsch')
+test('alignSequences - returns PairwiseAlignment format', () => {
+  const result = alignSequences('MKAA', 'MKAA', 'needleman_wunsch')
   expect(result.consensus).toBeDefined()
   expect(result.alns).toHaveLength(2)
   expect(result.alns[0].id).toBe('a')
@@ -55,12 +61,8 @@ test('runLocalAlignment - returns PairwiseAlignment format', () => {
   expect(result.consensus).toBe('||||')
 })
 
-test('runLocalAlignment - consensus marks gaps correctly', () => {
-  const result = runLocalAlignment(
-    'MKAYLSMFG',
-    'MKAAYLSMFG',
-    'needleman_wunsch',
-  )
+test('alignSequences - consensus marks gaps correctly', () => {
+  const result = alignSequences('MKAYLSMFG', 'MKAAYLSMFG', 'needleman_wunsch')
   expect(result.consensus).not.toContain('|||||||||')
   expect(result.consensus).toContain(' ')
 })
@@ -91,10 +93,10 @@ test('refuses an alignment whose DP table would exceed the cell limit', () => {
   expect(() => smithWaterman(long, long)).toThrow(/too long to align/)
 })
 
-test('runLocalAlignment - handles real protein sequences', () => {
+test('alignSequences - handles real protein sequences', () => {
   const seq1 = 'MKAAYLSMFGKEDHKPFGDDEVELFRAVPGLKLKIAG'
   const seq2 = 'MKAAYLSMFGKEDHKPFGDDEVELFRAVPGLKLKIAG'
-  const result = runLocalAlignment(seq1, seq2, 'needleman_wunsch')
+  const result = alignSequences(seq1, seq2, 'needleman_wunsch')
   expect(result.alns[0].seq).toBe(seq1)
   expect(result.alns[1].seq).toBe(seq2)
   expect(result.consensus).toBe('|'.repeat(seq1.length))

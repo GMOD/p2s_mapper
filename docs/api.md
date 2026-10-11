@@ -30,9 +30,9 @@ Conventions:
 ### Aligning two sequences
 
 ```ts
-import { runLocalAlignment, scoredAlignment, smithWaterman } from 'p2s_mapper'
+import { alignSequences, scoredAlignment, smithWaterman } from 'p2s_mapper'
 
-const pa = runLocalAlignment('MKVLAW', 'MKILA', 'needleman_wunsch')
+const pa = alignSequences('MKVLAW', 'MKILA', 'needleman_wunsch')
 pa.alns[0].seq // 'MKVLAW'
 pa.alns[1].seq // 'MKILA-'
 pa.consensus // '||:|| '
@@ -42,18 +42,25 @@ scoredAlignment('MKVLA', 'MKILA', 'smith_waterman').score // 21
 smithWaterman('HEAGAWGHEE', 'PAWHEAE').alignedSeq1 // '-HEAGAWGHE--E'
 ```
 
-<!-- GENERATED: runLocalAlignment scoredAlignment smithWaterman needlemanWunsch AlignmentResult selfScore alignmentTooLarge MAX_ALIGNMENT_CELLS -->
+<!-- GENERATED: alignSequences runLocalAlignment scoredAlignment smithWaterman needlemanWunsch AlignmentResult selfScore alignmentTooLarge MAX_ALIGNMENT_CELLS -->
 
 ```ts
+function alignSequences(
+  transcript: string,
+  structure: string,
+  algorithm: AlignmentAlgorithm,
+): PairwiseAlignment
+
+/** @deprecated renamed to `alignSequences`, which runs either algorithm */
 function runLocalAlignment(
-  seq1: string,
-  seq2: string,
+  transcript: string,
+  structure: string,
   algorithm: AlignmentAlgorithm,
 ): PairwiseAlignment
 
 function scoredAlignment(
-  seq1: string,
-  seq2: string,
+  transcript: string,
+  structure: string,
   algorithm: AlignmentAlgorithm,
 ): { alignment: PairwiseAlignment; score: number }
 
@@ -88,8 +95,9 @@ const MAX_ALIGNMENT_CELLS: 40000000
 
 - Both aligners score with BLOSUM62 and affine gaps: open -10, extend -0.5, the
   EMBOSS defaults.
-- `runLocalAlignment` puts its first sequence in row 0 and its second in row 1,
-  so pass the transcript first. It runs either algorithm, despite the name.
+- `alignSequences` puts the transcript in row 0 and the structure in row 1, in
+  the order you pass them. `runLocalAlignment` is its old name, kept as a
+  deprecated alias.
 - Each row contains its whole sequence. Smith-Waterman places the residues
   outside its local alignment at the ends, opposite gaps, as the `smithWaterman`
   line above shows, so every coordinate map works on a local alignment too.
@@ -210,11 +218,11 @@ show, or `undefined`.
 ```ts
 import {
   mappedStructureIdentity,
-  runLocalAlignment,
+  alignSequences,
   unmapStructurePositions,
 } from 'p2s_mapper'
 
-const pa = runLocalAlignment('MKVLAW', 'MKILA', 'needleman_wunsch')
+const pa = alignSequences('MKVLAW', 'MKILA', 'needleman_wunsch')
 mappedStructureIdentity(pa)
 // Map { 0 => true, 1 => true, 2 => false, 3 => true, 4 => true }
 
@@ -492,12 +500,12 @@ position belongs.
 ```ts
 import {
   invertMap,
-  runLocalAlignment,
+  alignSequences,
   structurePositionToAlignmentMap,
   structureSeqVsTranscriptSeqMap,
 } from 'p2s_mapper'
 
-const pa = runLocalAlignment('MKVLAW', 'MKILA', 'needleman_wunsch')
+const pa = alignSequences('MKVLAW', 'MKILA', 'needleman_wunsch')
 structureSeqVsTranscriptSeqMap(pa).structureSeqToTranscriptSeqPosition
 // { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
 structurePositionToAlignmentMap(pa) // { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }

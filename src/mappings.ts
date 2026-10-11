@@ -6,13 +6,11 @@ export interface AlignmentRow {
 }
 
 /**
- * A two-row alignment whose ROW ORDER IS A CONTRACT: row 0 is the transcript,
- * row 1 is the structure. Every producer honors it — runLocalAlignment is
- * always called as (transcript, structure), and the manual-import dialog tells
- * the user to paste them in that order — and every consumer depends on it, but
- * nothing in the type can enforce it, and swapping the two silently inverts
- * every coordinate map. Read the rows through the accessors below rather than
- * indexing, so a call site states which sequence it means.
+ * A two-row alignment: row 0 is the transcript and row 1 is the structure.
+ * alignSequences takes them in that order and every consumer depends on it,
+ * but the type cannot enforce it, and swapped rows invert every coordinate map
+ * without an error. Read the rows with the accessors below, so a call site
+ * names the sequence it means.
  */
 export interface PairwiseAlignment {
   consensus: string

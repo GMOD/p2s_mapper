@@ -393,14 +393,14 @@ export function selfScore(seq: string) {
 }
 
 export function scoredAlignment(
-  seq1: string,
-  seq2: string,
+  transcript: string,
+  structure: string,
   algorithm: AlignmentAlgorithm,
 ): { alignment: PairwiseAlignment; score: number } {
   const { alignedSeq1, alignedSeq2, score } =
     algorithm === 'smith_waterman'
-      ? smithWaterman(seq1, seq2)
-      : needlemanWunsch(seq1, seq2)
+      ? smithWaterman(transcript, structure)
+      : needlemanWunsch(transcript, structure)
 
   return {
     alignment: {
@@ -414,10 +414,13 @@ export function scoredAlignment(
   }
 }
 
-export function runLocalAlignment(
-  seq1: string,
-  seq2: string,
+export function alignSequences(
+  transcript: string,
+  structure: string,
   algorithm: AlignmentAlgorithm,
 ): PairwiseAlignment {
-  return scoredAlignment(seq1, seq2, algorithm).alignment
+  return scoredAlignment(transcript, structure, algorithm).alignment
 }
+
+/** @deprecated renamed to `alignSequences`, which runs either algorithm */
+export const runLocalAlignment = alignSequences

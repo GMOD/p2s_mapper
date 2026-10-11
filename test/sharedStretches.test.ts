@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 
 import {
   keepSharedStretches,
-  runLocalAlignment,
+  alignSequences,
   sharedIsoformResidues,
   structureSeqVsTranscriptSeqMap,
 } from '../src/index.ts'
@@ -55,7 +55,7 @@ test('sharedIsoformResidues: a lone substitution between shared stretches carrie
 
 test('keepSharedStretches: a local alignment of two isoforms unmaps the swapped exon and keeps both rows whole', () => {
   // row 0 is the transcript, row 1 the other isoform, as the 1D linkage aligns
-  const pa = runLocalAlignment(swapped, tp53, 'smith_waterman')
+  const pa = alignSequences(swapped, tp53, 'smith_waterman')
   const before = structureSeqVsTranscriptSeqMap(pa)
   expect(before.structureSeqToTranscriptSeqPosition[55]).toBeDefined()
 
@@ -72,6 +72,6 @@ test('keepSharedStretches: a local alignment of two isoforms unmaps the swapped 
 })
 
 test('keepSharedStretches: identical isoforms come back unchanged', () => {
-  const pa = runLocalAlignment(tp53, tp53, 'smith_waterman')
+  const pa = alignSequences(tp53, tp53, 'smith_waterman')
   expect(keepSharedStretches(pa)).toBe(pa)
 })

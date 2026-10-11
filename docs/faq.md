@@ -22,7 +22,7 @@ The mapping has three steps, and each has one check.
 | Step                     | Done by                                                        | Check                                               |
 | ------------------------ | -------------------------------------------------------------- | --------------------------------------------------- |
 | genome → transcript pos  | [g2p_mapper](https://github.com/GMOD/g2p_mapper)               | walks the CDS in transcription order, either strand |
-| transcript → structure   | `runLocalAlignment` and `makeCoordinateMapper`                 | `alignmentQuality`, `isLowSimilarity`               |
+| transcript → structure   | `alignSequences` and `makeCoordinateMapper`                    | `alignmentQuality`, `isLowSimilarity`               |
 | structure → Mol\* / user | `toLabelSeqIds`, `Entity.authSeqIds`, `makeUniProtPositionMap` | one function per numbering, separate position types |
 
 Two more checks apply across the steps:
