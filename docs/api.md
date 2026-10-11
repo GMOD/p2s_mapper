@@ -1733,6 +1733,9 @@ function timeout(time: number, signal?: AbortSignal): Promise<void>
 - Every network function takes `FetchOptions` last: `RequestInit` plus the
   `fetch` to call, which defaults to `globalThis.fetch` at call time. Pass an
   instrumented fetch from the host, or a double from a test.
+- Outside a browser, a request with no `User-Agent` of its own sends
+  `p2s_mapper (+https://github.com/GMOD/p2s_mapper)`, because AlphaFold's API
+  answers 403 to `node`, the one Node's fetch sends. A browser sends its own.
 - `rawfetch` returns any response; `myfetch` throws an `HttpError` on a non-2xx
   one; `jsonfetch` also parses the body, typed as the caller names it.
 - An `HttpError` carries the `status`, and its message carries the host and the

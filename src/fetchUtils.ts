@@ -75,10 +75,32 @@ export interface FetchOptions extends RequestInit {
   fetch?: typeof globalThis.fetch
 }
 
+const USER_AGENT = 'p2s_mapper (+https://github.com/GMOD/p2s_mapper)'
+
+/**
+ * AlphaFold's prediction API answers 403 to `node`, the user agent Node's fetch
+ * sends (measured 2026-10-11), so outside a browser every request names this
+ * package unless the caller named something else. A browser sends its own, and
+ * a script-set one would cost a CORS preflight on every call.
+ */
+function withUserAgent(init: RequestInit) {
+  if (
+    typeof navigator !== 'undefined' &&
+    navigator.userAgent.startsWith('Mozilla')
+  ) {
+    return init
+  }
+  const headers = new Headers(init.headers)
+  if (!headers.has('user-agent')) {
+    headers.set('user-agent', USER_AGENT)
+  }
+  return { ...init, headers }
+}
+
 export async function rawfetch(url: string, args?: FetchOptions) {
   const { fetch: f = globalThis.fetch, ...init } = args ?? {}
   try {
-    return await f(url, init)
+    return await f(url, withUserAgent(init))
   } catch (e) {
     throw networkError(url, e)
   }

@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, test, vi } from 'vitest'
 
-import { httpError, myfetch, networkError, timeout } from '../src/index.ts'
+import {
+  httpError,
+  myfetch,
+  networkError,
+  rawfetch,
+  timeout,
+} from '../src/index.ts'
 
 test('timeout resolves after the delay', async () => {
   await expect(timeout(1)).resolves.toBeUndefined()
@@ -87,5 +93,29 @@ describe('myfetch', () => {
     await expect(myfetch(URL_UNDER_TEST)).rejects.toThrow(
       /Could not reach rest\.uniprot\.org/,
     )
+  })
+})
+
+describe('rawfetch user agent', () => {
+  const sentUserAgent = async (init?: RequestInit) => {
+    const fetch = vi.fn((_input: RequestInfo | URL, _init?: RequestInit) =>
+      Promise.resolve(new Response('')),
+    )
+    await rawfetch(URL_UNDER_TEST, { ...init, fetch })
+    return new Headers(fetch.mock.calls[0]?.[1]?.headers).get('user-agent')
+  }
+
+  it('names the package outside a browser, which AlphaFold requires', async () => {
+    expect(await sentUserAgent()).toMatch(/^p2s_mapper /)
+  })
+
+  it("keeps the caller's own user agent", async () => {
+    const headers = { 'User-Agent': 'my-tool/2', Accept: 'application/json' }
+    expect(await sentUserAgent({ headers })).toBe('my-tool/2')
+  })
+
+  it('leaves a browser to send its own', async () => {
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 Chrome/140.0' })
+    expect(await sentUserAgent()).toBeNull()
   })
 })
