@@ -1,3 +1,20 @@
+## [2.1.0](https://github.com/GMOD/p2s_mapper/compare/v2.0.0...v2.1.0) (2026-10-11)
+
+### Bug Fixes
+
+- Stop searchUniProtEntries logging failed lookups to the console ([0a75861](https://github.com/GMOD/p2s_mapper/commit/0a75861eb0222ab944b8de81966ede1ec6b37c33))
+
+### Documentation
+
+- Turn the README intro into short bullets ([00a7a83](https://github.com/GMOD/p2s_mapper/commit/00a7a834cac41fae55604c2feded5480e40da7ee))
+- Rewrite README and api.md prose that reads as generated ([2c72922](https://github.com/GMOD/p2s_mapper/commit/2c729225cc65462a55ba661e0345844e7e8e7fce))
+- Second trope pass; sweep coordinates, pipeline and faq too ([9432a35](https://github.com/GMOD/p2s_mapper/commit/9432a351737e9867afb9c1018b2fa13d3dc3564f))
+- Rewrite source comments that describe the JBrowse plugin ([61e07fd](https://github.com/GMOD/p2s_mapper/commit/61e07fd22befde5f74caaaafcf9b4030308a9068))
+
+### Features
+
+- Rename runLocalAlignment to alignSequences ([d4a853c](https://github.com/GMOD/p2s_mapper/commit/d4a853cf3c4a925b32ad9b40e934213705553127))
+
 ## [2.0.0](https://github.com/GMOD/p2s_mapper/compare/v1.4.0...v2.0.0) (2026-10-11)
 
 ### Bug Fixes
