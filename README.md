@@ -10,7 +10,7 @@ Functionality
 - Picks the right chain and flags a poor match
 - Finds structures for a gene
 - Places UniProt annotations on a PDB entry
-- With [g2p_mapper](https://github.com/GMOD/g2p_mapper): genome position ↔ 3D
+- Works alongside [g2p_mapper](https://github.com/GMOD/g2p_mapper) to map genome position ↔ protein sequence ↔ 3D
   residue
 - No React, JBrowse or Mol\* dependency
 - Used by
