@@ -70,9 +70,9 @@ partner of a complex:
 On 1H26, the 11-residue p53 peptide scores 0.69 against CDK2's 0.19. Across a
 ribosome's 55 chains, no decoy scores above 0.29.
 
-`chooseMappedEntity` returns `undefined` when no chain can be mapped, and does
-not fall back to entity 0. A fallback to entity 0 would mis-map every
-heteromeric, protein-DNA and processed-peptide structure and raise no error.
+`chooseMappedEntity` returns `undefined` when no chain can be mapped, without
+falling back to entity 0. A fallback to entity 0 would mis-map every
+heteromeric, protein-DNA and processed-peptide structure, with no error.
 
 A hover or click event has the `label_seq_id` of the chain under the pointer, so
 `interactionMatchesMappedEntity` lets only the mapped entity move the genome

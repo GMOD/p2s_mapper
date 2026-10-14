@@ -94,7 +94,7 @@ const MAX_ALIGNMENT_CELLS: 40000000
 <!-- /GENERATED -->
 
 - The Smith-Waterman and Needleman-Wunsch aligners score with BLOSUM62 and
-  affine gaps (open -10, extend -0.5, the EMBOSS defaults).
+  affine gaps: open -10, extend -0.5, the EMBOSS defaults.
 - `alignSequences` puts the transcript in row 0 and the structure in row 1, in
   the order you pass them. `runLocalAlignment` is its old name, kept as a
   deprecated alias.
@@ -679,8 +679,8 @@ function interactionMatchesMappedEntity(
 2. Otherwise it aligns the transcript to every distinct protein sequence and
    keeps the highest `explained`: identical residues over the shorter of the two
    sequences, plus a 5-residue pseudocount (`explainedFraction`). It skips DNA
-   and RNA chains passed as `{ seq, nucleicAcid: true }`; mark them that way,
-   because their letters are amino-acid letters too.
+   and RNA chains; pass them as `{ seq, nucleicAcid: true }`, because their
+   letters are amino-acid letters too.
 
 `chooseMappedEntity` returns the best match even when it is poor, so check it
 with [`isLowSimilarity`](#quality). The result is `undefined` only when there is
