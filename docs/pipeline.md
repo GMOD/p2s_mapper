@@ -32,8 +32,8 @@ output.
    experimental PDB entry (`fetchExperimentalStructures`), or let the user name
    a structure. See [api.md](api.md#structure-sources).
 4. **Read the chains.** The host loads the file in Mol\*, and `extractEntities`
-   reads each chain's sequence from the loaded model. The package never imports
-   Mol\*.
+   reads each chain's sequence from the loaded model, so the package itself
+   never imports Mol\*.
 
 **Matching the protein to a chain**
 
@@ -41,9 +41,9 @@ output.
    the gene's protein, in two tiers:
    - A chain whose sequence is **identical** to the protein wins outright, with
      no alignment search.
-   - Otherwise it aligns the protein against every protein chain and keeps the
-     highest score: identical residues over the shorter sequence, plus a
-     5-residue pseudocount. It skips DNA and RNA chains.
+   - Otherwise it aligns the protein against every protein chain, skipping DNA
+     and RNA chains, and keeps the highest score: identical residues over the
+     shorter sequence, plus a 5-residue pseudocount.
 
    `chooseMappedEntity` returns the best match even when it is poor, so step 6
    checks it. The same call returns the alignment, so there is no separate
@@ -57,7 +57,7 @@ output.
    entry's UniProt alignment from RCSB. `fusionPartnerPositions` finds the
    residues that alignment assigns to a fused partner protein, and
    `unmapStructurePositions` removes them. `makeUniProtPositionMap` places
-   UniProt annotations. The residue mapping itself comes from the package's
+   UniProt annotations, but the residue mapping itself comes from the package's
    alignment, not from the entry's.
 8. **Build the lookup tables.** `makeCoordinateMapper` builds every conversion
    once from the alignment, with a separate type for each
@@ -74,8 +74,8 @@ either:
 - **1H26**: the 11-residue p53 peptide matches 11 residues, and CDK2 has 58
   scattered identities. Divided by the shorter sequence, the peptide scores
   0.69.
-- **4ZZJ**: SIRT1 has 63 identical residues and the 7-residue p53 peptide has 6.
-  The peptide scores 0.50.
+- **4ZZJ**: SIRT1 has 63 identical residues and the 7-residue p53 peptide has 6,
+  so the peptide scores 0.50.
 
 Identical residues over the shorter length is the fraction of the smaller
 sequence that the other reproduces, so the highest-scoring chain is the gene's

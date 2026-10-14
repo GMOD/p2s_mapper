@@ -98,9 +98,10 @@ const MAX_ALIGNMENT_CELLS: 40000000
 - `alignSequences` puts the transcript in row 0 and the structure in row 1, in
   the order you pass them. `runLocalAlignment` is its old name, kept as a
   deprecated alias.
-- Each row contains its whole sequence. Smith-Waterman places the residues
-  outside its local alignment at the ends, opposite gaps, as the `smithWaterman`
-  line above shows, so every coordinate map works on a local alignment too.
+- Each row contains its whole sequence, with the residues outside
+  Smith-Waterman's local alignment placed at the ends, opposite gaps, as the
+  `smithWaterman` line above shows. Every coordinate map therefore works on a
+  local alignment too.
 - The consensus row marks identities with `|`, positive BLOSUM62 pairs with `:`
   and everything else with a space.
 - The DP table is capped at `MAX_ALIGNMENT_CELLS` (about 40 MB and a second of
@@ -1133,7 +1134,7 @@ with no UniProt alignment, such as DNA alone, it returns empty `mappings`.
 `unpStart` and `unpEnd` are 1-based UniProt positions.
 
 We compared RCSB with PDBe's SIFTS API on 23 entries on 2026-10-11, including
-1TUP, 2RH1, 4HHB and the 7K00 ribosome. Every mapped residue agreed. RCSB
+1TUP, 2RH1, 4HHB and the 7K00 ribosome, and every mapped residue agreed. RCSB
 answered in 3 s and PDBe in 24 s, and PDBe failed on one entry.
 
 ### Placing UniProt features
@@ -1290,9 +1291,9 @@ function buildGeneNameQuery(
 - The gene-name search runs at the same time, but its results count only when no
   cross-reference search found a reviewed entry. It searches `gene_exact`, which
   skips synonyms and paralogs, and only reviewed entries.
-- `organismId` is an NCBI taxon id. Without it the search covers every species.
-  When the taxon has no match, the search widens to its descendants, because
-  Swiss-Prot files fission yeast (4896) under strain 284812.
+- `organismId` is an NCBI taxon id, and without it the search covers every
+  species. When the taxon has no match, the search widens to its descendants,
+  because Swiss-Prot files fission yeast (4896) under strain 284812.
 - Reviewed entries sort first. When every search fails, the call throws the
   network error rather than returning an empty list. `failedCount` counts the
   searches that failed.
@@ -1461,7 +1462,7 @@ const RCSB_SEQUENCE_COORDINATES_URL: 'https://sequence-coordinates.rcsb.org/grap
 
 `fetchExperimentalStructures` lists every PDB entry RCSB aligns to the
 accession, best coverage first and best resolution within a tie, with the chains
-of the protein. It makes two CORS-enabled calls. The sequence-coordinates API
+of the protein. Of its two CORS-enabled calls, the sequence-coordinates API
 lists the aligned entities and the UniProt range each covers, and the data API
 returns each entry's method, resolution and chains, in batches of a thousand
 entities. It skips RCSB's computed models (`AF_…`); use `fetchAlphaFoldModels`

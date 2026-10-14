@@ -38,7 +38,7 @@ ids. Convert with one of:
 
 `auth_seq_id` is the depositors' numbering, which papers and UniProt cite and
 Mol\*'s hover shows: in 1TUP, position 154 is residue 248. `Entity.authSeqIds`
-lists it. Use it for display only, and don't pass it to a coordinate map.
+lists it; use it for display only, and don't pass it to a coordinate map.
 
 ## UniProt positions
 
