@@ -10,8 +10,8 @@ Functionality
 - Picks the right chain and flags a poor match
 - Finds structures for a gene
 - Places UniProt annotations on a PDB entry
-- Works alongside [g2p_mapper](https://github.com/GMOD/g2p_mapper) to map genome position ↔ protein sequence ↔ 3D
-  residue
+- Works alongside [g2p_mapper](https://github.com/GMOD/g2p_mapper) to map genome
+  position ↔ protein sequence ↔ 3D residue
 - No React, JBrowse or Mol\* dependency
 - Used by
   [jbrowse-plugin-protein3d](https://github.com/GMOD/jbrowse-plugin-protein3d)
@@ -219,10 +219,10 @@ toStructure(248) // 154: UniProt residue 248 is structure position 154
 ## Docs
 
 - [api.md](docs/api.md): every export, with its signature, types and an example
-- [pipeline.md](docs/pipeline.md): step by step 'pipeline' overview
+- [pipeline.md](docs/pipeline.md): the steps from a gene to a residue
 - [coordinates.md](docs/coordinates.md): residue numbering systems and
   conversion functions
-- [faq.md](docs/faq.md): FAQs... for example, can I trust this mapping?
+- [faq.md](docs/faq.md): how far to trust the mapping
 
 ## Pitfalls
 

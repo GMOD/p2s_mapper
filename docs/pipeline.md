@@ -12,8 +12,7 @@ The chart's source is [`img/pipeline.dot`](img/pipeline.dot); regenerate the SVG
 with `dot -Tsvg docs/img/pipeline.dot -o docs/img/pipeline.svg`.
 
 p2s_mapper has no function that runs the whole pipeline, so the host app calls
-each step. The chart shows the order in which each step needs an earlier one's
-output.
+each step.
 
 ## Steps
 
@@ -51,8 +50,7 @@ output.
    BLOSUM62 with affine gaps; row 0 is the transcript and row 1 the structure.
 
 6. **Check the match (advisory).** `alignmentQuality` and `isLowSimilarity` flag
-   a weak match, and this is the only step that catches a poor best match. The
-   host decides what to show for a low-similarity match.
+   a weak match. The host decides what to show for a low-similarity match.
 7. **Trim fusion partners (optional, PDB only).** `fetchPdbEntry` reads the
    entry's UniProt alignment from RCSB. `fusionPartnerPositions` finds the
    residues that alignment assigns to a fused partner protein, and
