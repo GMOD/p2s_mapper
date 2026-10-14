@@ -74,10 +74,9 @@ ribosome's 55 chains, no decoy scores above 0.29.
 not fall back to entity 0. A fallback to entity 0 would mis-map every
 heteromeric, protein-DNA and processed-peptide structure and raise no error.
 
-A hover or click event has the `label_seq_id` of whichever chain is under the
-pointer. `interactionMatchesMappedEntity` lets only the mapped entity move the
-genome view, because another chain's positions would go through the wrong
-alignment.
+A hover or click event has the `label_seq_id` of the chain under the pointer, so
+`interactionMatchesMappedEntity` lets only the mapped entity move the genome
+view.
 
 ## What if the structure differs from my transcript?
 

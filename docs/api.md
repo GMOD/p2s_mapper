@@ -1038,8 +1038,8 @@ Rac1 and Rac1b).
 
 `pickStructureSequence` chooses the chain to rank against. It picks a chain some
 isoform translates to exactly, else the chain `chooseMappedEntity` maps the
-longest isoform to. On 1H26 the first chain is CDK2 and the p53 peptide is the
-third, so the first chain is the wrong one to rank against.
+longest isoform to. On 1H26 the first chain is CDK2, while the p53 peptide is
+the third.
 
 ## UniProt mapping
 

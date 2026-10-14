@@ -1,9 +1,9 @@
 # Pipeline
 
-The chart shows the main path from a gene to a 3D structure. The host finds the
-gene's protein and a structure separately, matches the protein to one of the
-structure's chains, and builds a lookup in both directions from the alignment of
-that match. The steps below add three things the chart omits: the choice of
+The chart shows the main path from a gene to a 3D structure. The gene's protein
+and a structure are found separately, the protein is matched to one of the
+structure's chains, and the alignment from that match becomes a lookup in both
+directions. The steps below add three things the chart omits: the choice of
 structure source, the quality check and the optional fusion-partner trim.
 
 ![From a gene on the genome to a residue in 3D, and back](img/pipeline.svg)
@@ -32,7 +32,8 @@ output.
    experimental PDB entry (`fetchExperimentalStructures`), or let the user name
    a structure. See [api.md](api.md#structure-sources).
 4. **Read the chains.** The host loads the file in Mol\*, and `extractEntities`
-   reads each chain's sequence from the loaded model.
+   reads each chain's sequence from the loaded model. The package never imports
+   Mol\*.
 
 **Matching the protein to a chain**
 
