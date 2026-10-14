@@ -233,7 +233,7 @@ toStructure(248) // 154: UniProt residue 248 is structure position 154
 - `chooseMappedEntity` returns the best-matching chain even when the match is
   poor. Check it with `isLowSimilarity` before trusting the mapping.
 - Get Mol\*'s `label_seq_id` from `toLabelSeqIds`, which reads `Entity.seqIds`.
-  Adding 1 to the position gives the wrong residue in a PDB file without SEQRES.
+  `label_seq_id` is position + 1 only in a file with SEQRES.
 
 ## License
 

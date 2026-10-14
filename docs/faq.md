@@ -40,9 +40,10 @@ Local alignment always finds _some_ best stretch, even between unrelated
 sequences, so identity over the aligned columns is high even for a chance match.
 The package measures identical residues over the **shorter** sequence instead.
 
-On chance alignments, measured on 2026-09-11, that statistic was 0.03, 0.20 and
-0.24. Real structures of the transcript's protein score 0.9 or better, and an
-ortholog scores about 0.6. `isLowSimilarity` sets the floor at 0.3.
+On chance alignments, measured on 2026-09-11, identity over the shorter sequence
+was 0.03, 0.20 and 0.24. Real structures of the transcript's protein score 0.9
+or better, and an ortholog scores about 0.6. `isLowSimilarity` sets the floor at
+0.3.
 
 Short alignments need a higher score:
 
@@ -69,13 +70,14 @@ partner of a complex:
 On 1H26, the 11-residue p53 peptide scores 0.69 against CDK2's 0.19. Across a
 ribosome's 55 chains, no decoy scores above 0.29.
 
-`chooseMappedEntity` returns `undefined` when no chain can be mapped, without
-falling back to entity 0. Falling back to entity 0 mis-maps every heteromeric,
-protein-DNA and processed-peptide structure, with no error.
+`chooseMappedEntity` returns `undefined` when no chain can be mapped, and does
+not fall back to entity 0. A fallback to entity 0 would mis-map every
+heteromeric, protein-DNA and processed-peptide structure and raise no error.
 
-A hover or click event has the `label_seq_id` of the chain under the pointer, so
-`interactionMatchesMappedEntity` lets only the mapped entity move the genome
-view.
+A hover or click event has the `label_seq_id` of whichever chain is under the
+pointer. `interactionMatchesMappedEntity` lets only the mapped entity move the
+genome view, because another chain's positions would go through the wrong
+alignment.
 
 ## What if the structure differs from my transcript?
 
@@ -89,9 +91,9 @@ and loops the crystal does not resolve.
 - **Unobserved loops** leave gaps in the structure's residue ids. The package
   converts to Mol\* ids through `Entity.seqIds`, which lists the real ids, so a
   gap does not shift the residues after it.
-- **Modified residues** (MSE, TPO, ACE) are read from `sequence.code`.
-  `sequence.label` writes them as three-letter component ids, which would shift
-  every later position.
+- **Modified residues** (MSE, TPO, ACE) come from `sequence.code`, which
+  `extractEntities` reads. `sequence.label` lists them as three-letter component
+  ids, which would shift every later position.
 
 ## Why do residue numbers disagree with the paper?
 
@@ -108,10 +110,10 @@ alignment, read from RCSB, instead of assuming an offset.
 
 Local alignment is most likely to go wrong on a fusion protein.
 
-- Scoring over the shorter sequence means a 60-residue target fused to a
-  370-residue carrier still scores near 1.0. Dividing by the entity's length
-  alone would score it 0.14, and a random 10-residue decoy would beat it a third
-  of the time.
+- With the score taken over the shorter sequence, a 60-residue target fused to a
+  370-residue carrier still scores near 1.0. Divided by the entity's length
+  alone, it would score 0.14, and a random 10-residue decoy would beat it a
+  third of the time.
 - Local alignment can still continue across the boundary onto the fusion
   partner: in 2RH1 it maps 33 receptor residues onto T4 lysozyme.
   `fusionPartnerPositions` finds the residues the entry's UniProt alignment
@@ -138,9 +140,9 @@ transcript cannot lock up or crash the tab.
 
 ## What does the package not guard against?
 
-- **Translation exceptions.** g2p_mapper assumes standard three-base codons.
-  Selenocysteine recoding, frameshifts and other departures from the standard
-  codon table are not modelled.
+- **Translation exceptions.** g2p_mapper assumes standard three-base codons, and
+  does not model selenocysteine recoding, frameshifts or other departures from
+  the standard codon table.
 - **The wrong isoform.** The alignment maps whatever transcript you give it.
   `classifyIsoforms` and `selectBestTranscript` rank isoforms against a chain,
   but the caller decides which transcript is the one on screen.

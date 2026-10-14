@@ -1,9 +1,9 @@
 # Pipeline
 
-The chart shows the main path from a gene to a 3D structure. The gene's protein
-and a structure are found separately, the protein is matched to one of the
-structure's chains, and the alignment from that match becomes a lookup in both
-directions. The steps below add three things the chart omits: the choice of
+The chart shows the main path from a gene to a 3D structure. The host finds the
+gene's protein and a structure separately, matches the protein to one of the
+structure's chains, and builds a lookup in both directions from the alignment of
+that match. The steps below add three things the chart omits: the choice of
 structure source, the quality check and the optional fusion-partner trim.
 
 ![From a gene on the genome to a residue in 3D, and back](img/pipeline.svg)
@@ -32,8 +32,7 @@ output.
    experimental PDB entry (`fetchExperimentalStructures`), or let the user name
    a structure. See [api.md](api.md#structure-sources).
 4. **Read the chains.** The host loads the file in Mol\*, and `extractEntities`
-   reads each chain's sequence from the loaded model. The package never imports
-   Mol\*.
+   reads each chain's sequence from the loaded model.
 
 **Matching the protein to a chain**
 
@@ -43,7 +42,7 @@ output.
      no alignment search.
    - Otherwise it aligns the protein against every protein chain and keeps the
      highest score: identical residues over the shorter sequence, plus a
-     5-residue pseudocount. DNA and RNA chains are skipped.
+     5-residue pseudocount. It skips DNA and RNA chains.
 
    `chooseMappedEntity` returns the best match even when it is poor, so step 6
    checks it. The same call returns the alignment, so there is no separate
@@ -67,8 +66,9 @@ The [FAQ](faq.md) covers how far to trust the result.
 
 ## Why the score divides by the shorter sequence
 
-A raw match count picks the large partner of every bound peptide, and the
-alignment score does not separate them either:
+Ranked by raw match count, `chooseMappedEntity` would pick the large partner of
+every bound peptide, and ranking by alignment score would not separate them
+either:
 
 - **1H26**: the 11-residue p53 peptide matches 11 residues, and CDK2 has 58
   scattered identities. Divided by the shorter sequence, the peptide scores
@@ -76,8 +76,9 @@ alignment score does not separate them either:
 - **4ZZJ**: SIRT1 has 63 identical residues and the 7-residue p53 peptide has 6.
   The peptide scores 0.50.
 
-Dividing by the shorter length measures how much of the smaller sequence the
-other reproduces, which identifies the chain that is the gene's product.
+Identical residues over the shorter length is the fraction of the smaller
+sequence that the other reproduces, so the highest-scoring chain is the gene's
+product.
 
 ## Why the format is detected from content
 

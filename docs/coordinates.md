@@ -26,9 +26,9 @@ function or field.
 ### Mol\* selects residues by `label_seq_id`
 
 `label_seq_id` is `position + 1` only in a file with `entity_poly_seq` or
-SEQRES. A PDB file without SEQRES numbers its observed residues by author
-numbering, with gaps at unobserved loops, so `Entity.seqIds` lists the real ids.
-Convert with one of:
+SEQRES. In a PDB file without SEQRES, the observed residues have their author
+numbers as ids, with gaps at unobserved loops, so `Entity.seqIds` lists the real
+ids. Convert with one of:
 
 - `toLabelSeqIds`
 - `rangeToLabelSeqIds`

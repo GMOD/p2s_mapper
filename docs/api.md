@@ -93,8 +93,8 @@ const MAX_ALIGNMENT_CELLS: 40000000
 
 <!-- /GENERATED -->
 
-- Both aligners score with BLOSUM62 and affine gaps: open -10, extend -0.5, the
-  EMBOSS defaults.
+- The Smith-Waterman and Needleman-Wunsch aligners score with BLOSUM62 and
+  affine gaps (open -10, extend -0.5, the EMBOSS defaults).
 - `alignSequences` puts the transcript in row 0 and the structure in row 1, in
   the order you pass them. `runLocalAlignment` is its old name, kept as a
   deprecated alias.
@@ -263,7 +263,7 @@ const shared = sharedIsoformResidues(
   'MKTAYIAKQRDEFGHISFVKSHFSRQ',
 )
 shared.get(9) // 9
-shared.get(10) // undefined: Q sits opposite the insert's D
+shared.get(10) // undefined: Q is opposite the insert's D
 shared.get(11) // 15
 ```
 
@@ -445,8 +445,9 @@ function transcriptRangeToStructureRange(
   map, such as highlighting every aligned residue.
 - `transcriptRangeToStructureRange` takes 1-based inclusive transcript residues
   and returns a 0-based half-open structure range. It skips residues the
-  structure lacks, so a feature running past a fragment's end clamps to the last
-  modelled residue. It returns `undefined` when none of the range aligns.
+  structure lacks, so for a feature running past a fragment's end, the range
+  ends at the last modelled residue. It returns `undefined` when none of the
+  range aligns.
 
 ### Branded positions
 
@@ -676,14 +677,14 @@ function interactionMatchesMappedEntity(
    with no alignment search.
 2. Otherwise it aligns the transcript to every distinct protein sequence and
    keeps the highest `explained`: identical residues over the shorter of the two
-   sequences, plus a 5-residue pseudocount (`explainedFraction`). DNA and RNA
-   chains are skipped; pass them as `{ seq, nucleicAcid: true }`, because their
-   letters are amino-acid letters too.
+   sequences, plus a 5-residue pseudocount (`explainedFraction`). It skips DNA
+   and RNA chains passed as `{ seq, nucleicAcid: true }`; mark them that way,
+   because their letters are amino-acid letters too.
 
-The best match wins even when it is poor, so check it with
-[`isLowSimilarity`](#quality). The result is `undefined` only when there is
-nothing to map: an empty transcript, or no protein chain. Stop codons are
-stripped from both sides.
+`chooseMappedEntity` returns the best match even when it is poor, so check it
+with [`isLowSimilarity`](#quality). The result is `undefined` only when there is
+nothing to map: an empty transcript, or no protein chain. The function strips
+stop codons from both sides.
 [pipeline.md](pipeline.md#why-the-score-divides-by-the-shorter-sequence)
 explains why the score divides by the shorter sequence.
 
@@ -810,9 +811,9 @@ function fillAuthSeqIds(
   and `nucleicAcid`.
 - `extractStructureSequences` returns just the protein chains' sequences.
 - `extractEntities` reads the sequence from Mol\*'s `sequence.code`. Mol\*'s
-  `sequence.label` writes some residues as their three-letter component id (MSE,
-  TPO, ACE), so it is longer than `seqIds`, and every later position would
-  select the wrong residue.
+  `sequence.label` lists some residues as their three-letter component id (MSE,
+  TPO, ACE), so the label is longer than `seqIds`, and every later position
+  would select the wrong residue.
 - `oneLetterSequence` replaces each `X` in `sequence.code` with the residue from
   the mmCIF canonical sequence: `oneLetterSequence(['M', 'X', 'K'], 'MMK')` is
   `'MMK'`.
@@ -954,11 +955,11 @@ function looksLikePlddt(values: number[] | undefined): values is number[]
 <!-- /GENERATED -->
 
 AlphaFold stores pLDDT in the B-factor column, so `extractPerResidueConfidence`
-reads the B-factor of each residue's first atom. The values are keyed by
-`label_seq_id` because the atomic hierarchy holds only observed residues. For an
-experimental entry the column holds real B-factors, not confidence, so check the
-experimental method before drawing it; `looksLikePlddt` only rejects a constant
-or out-of-range column.
+reads the B-factor of each residue's first atom. It keys the values by
+`label_seq_id`, because the atomic hierarchy holds only observed residues. For
+an experimental entry the column holds real B-factors, not confidence, so check
+the experimental method before drawing it; `looksLikePlddt` only rejects a
+constant or out-of-range column.
 
 ### Isoforms
 
@@ -1029,15 +1030,16 @@ interface ClassifiedIsoforms {
 
 <!-- /GENERATED -->
 
-An isoform that translates to exactly the structure's sequence wins. The rest
-rank by alignment score, then identical residues, then length. Score comes first
-because an isoform with an exon the structure lacks still aligns every structure
-residue, across a gap (1MH1 against Rac1 and Rac1b).
+`classifyIsoforms` puts first an isoform that translates to exactly the
+structure's sequence, and ranks the rest by alignment score, then identical
+residues, then length. Score comes first because an isoform with an exon the
+structure lacks still aligns every structure residue, across a gap (1MH1 against
+Rac1 and Rac1b).
 
 `pickStructureSequence` chooses the chain to rank against. It picks a chain some
 isoform translates to exactly, else the chain `chooseMappedEntity` maps the
-longest isoform to. On 1H26 the first chain is CDK2, while the p53 peptide is
-the third.
+longest isoform to. On 1H26 the first chain is CDK2 and the p53 peptide is the
+third, so the first chain is the wrong one to rank against.
 
 ## UniProt mapping
 
@@ -1119,16 +1121,16 @@ const RCSB_DATA_GRAPHQL_URL: 'https://data.rcsb.org/graphql'
 <!-- /GENERATED -->
 
 `fetchPdbEntry` reads the alignment and the entry's protein sequences in one
-GraphQL call to RCSB's data API. The answer is a few kB, so an isoform list can
-be labelled without downloading the structure file, which for a ribosome is
+GraphQL call to RCSB's data API. The answer is a few kB, so a host can label an
+isoform list without downloading the structure file, which for a ribosome is
 large.
 
 `fetchPdbEntry` retries twice within a 20-second deadline. It does not retry an
 id RCSB has no entry for, which throws a 404 `HttpError`, or a GraphQL error,
-which throws as a 400, because asking again gets the same answer. An entry with
-no UniProt alignment, such as DNA alone, returns empty `mappings`. `structStart`
-and `structEnd` are 0-based inclusive structure positions; `unpStart` and
-`unpEnd` are 1-based UniProt positions.
+which throws as a 400, because asking again gets the same answer. For an entry
+with no UniProt alignment, such as DNA alone, it returns empty `mappings`.
+`structStart` and `structEnd` are 0-based inclusive structure positions;
+`unpStart` and `unpEnd` are 1-based UniProt positions.
 
 We compared RCSB with PDBe's SIFTS API on 23 entries on 2026-10-11, including
 1TUP, 2RH1, 4HHB and the 7K00 ribosome. Every mapped residue agreed. RCSB
@@ -1282,11 +1284,12 @@ function buildGeneNameQuery(
 
 <!-- /GENERATED -->
 
-- Each recognized id is searched as a UniProt cross-reference. `geneId` is
-  searched too when it is a recognized id, without its version suffix.
+- `searchUniProtEntries` searches each recognized id as a UniProt
+  cross-reference. It searches `geneId` too when it is a recognized id, without
+  its version suffix.
 - The gene-name search runs at the same time, but its results count only when no
-  cross-reference found a reviewed entry. It searches `gene_exact`, which skips
-  synonyms and paralogs, and only reviewed entries.
+  cross-reference search found a reviewed entry. It searches `gene_exact`, which
+  skips synonyms and paralogs, and only reviewed entries.
 - `organismId` is an NCBI taxon id. Without it the search covers every species.
   When the taxon has no match, the search widens to its descendants, because
   Swiss-Prot files fission yeast (4896) under strain 284812.
@@ -1379,10 +1382,10 @@ interface AlphaFoldModel {
 
 <!-- /GENERATED -->
 
-`fetchAlphaFoldModels` asks AlphaFold DB which models exist rather than deriving
-a file name: a protein past AlphaFold's length cap has no F1 model at all
-(dystrophin has fourteen isoform models), and the model version changes. For an
-accession AlphaFold never folded, it returns `[]`.
+`fetchAlphaFoldModels` asks AlphaFold DB which models exist. A file name derived
+from the accession can be wrong, because a protein past AlphaFold's length cap
+has no F1 model at all (dystrophin has fourteen isoform models), and the model
+version changes. For an accession AlphaFold never folded, it returns `[]`.
 
 `pickAlphaFoldModel` prefers a model folded from exactly one of the
 translations, canonical first, so every residue maps to itself. Failing that, it
