@@ -1,3 +1,16 @@
+## [2.2.0](https://github.com/GMOD/p2s_mapper/compare/v2.1.0...v2.2.0) (2026-10-15)
+
+### Other Changes
+
+- Update README.md ([0bf5a2d](https://github.com/GMOD/p2s_mapper/commit/0bf5a2ddfa7982a29de0d965a7d37ddb0405fbca))
+- Update README.md ([21d8a9d](https://github.com/GMOD/p2s_mapper/commit/21d8a9da502c711b7625646012ed636a4d7c5e9a))
+- Rewrite AI-writing tropes in README and docs ([1d928e4](https://github.com/GMOD/p2s_mapper/commit/1d928e4e77cda284ec81e0b507851423ff47d882))
+- Restore claims changed by the tropes rewrite ([ea8bccd](https://github.com/GMOD/p2s_mapper/commit/ea8bccd111038fc0a9cc83244140805046628b96))
+- Fold short verdict sentences into their neighbours ([3fbeb14](https://github.com/GMOD/p2s_mapper/commit/3fbeb149a5f58aa6962d67e1bbb7a5473da32615))
+- Restore wording the tropes rewrite changed without a trope ([6dc489f](https://github.com/GMOD/p2s_mapper/commit/6dc489fb8a981f1863fdbc21d1ed8a96fd0b9a54))
+- Tighten README docs list and pipeline intro ([3bf4617](https://github.com/GMOD/p2s_mapper/commit/3bf461750e0960e431ce0e3a74543dc4c7bb2bf9))
+- Add a Foldseek search, an entry-name search and label chains ([8a53fff](https://github.com/GMOD/p2s_mapper/commit/8a53fff87f2ce58f434daaba68766260f6758591))
+
 ## [2.1.0](https://github.com/GMOD/p2s_mapper/compare/v2.0.0...v2.1.0) (2026-10-11)
 
 ### Bug Fixes
