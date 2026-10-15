@@ -2,10 +2,16 @@ import { describe, expect, it } from 'vitest'
 
 import {
   FOLDSEEK_MAX_RESIDUES,
+  cleanFoldseekSequence,
   foldseekHitPairs,
+  foldseekLengthProblem,
   foldseekQuery,
+  parseFoldseekResponse,
   parseFoldseekResult,
+  predict3Di,
   searchFoldseek,
+  submitFoldseekSearch,
+  waitForFoldseekResults,
 } from '../src/index.ts'
 
 import type { FoldseekHit } from '../src/index.ts'
@@ -73,7 +79,7 @@ describe('foldseekHitPairs', () => {
 })
 
 describe('parseFoldseekResult', () => {
-  it('reads the hits of every database and drops a hit missing a field', () => {
+  it('reads the hits of every database and keeps every field the server sent', () => {
     const body = {
       results: [
         {
@@ -97,9 +103,36 @@ describe('parseFoldseekResult', () => {
       ],
     }
     const hits = parseFoldseekResult(body)
+    // a hit with no alignment is kept, and foldseekHitPairs declines to pair it
     expect(hits.map(h => [h.db, h.target])).toEqual([
       ['pdb100', '1c7c-assembly1.cif.gz_A'],
+      ['pdb100', 'no-positions'],
     ])
+    expect(foldseekHitPairs(hits[1]!, foldseekQuery('ACDEF'))).toBeUndefined()
+  })
+
+  it('keeps the query, and a database with no hits has no alignments', () => {
+    expect(
+      parseFoldseekResponse({
+        queries: [{ header: 'query', sequence: 'MK' }],
+        results: [
+          { db: 'pdb100', alignments: [[{ target: '1tup_A', prob: 1 }]] },
+          { db: 'afdb50', alignments: null },
+        ],
+      }),
+    ).toEqual({
+      query: { header: 'query', sequence: 'MK' },
+      results: [
+        { db: 'pdb100', alignments: [[{ target: '1tup_A', prob: 1 }]] },
+        { db: 'afdb50', alignments: undefined },
+      ],
+    })
+  })
+
+  it('names a result whose database has no name', () => {
+    expect(() => parseFoldseekResponse({ results: [{}] })).toThrow(
+      'naming no database',
+    )
   })
 
   it('throws on a body with no list of databases', () => {
@@ -150,7 +183,7 @@ describe('searchFoldseek', () => {
     expect(hits.map(h => h.db)).toEqual(['pdb100'])
     expect(log.at(-1)).toContain('/api/result/T1/0')
     expect(status[0]).toBe('Predicting 3Di')
-    expect(status.some(s => s.startsWith('Searching'))).toBe(true)
+    expect(status.some(s => s.startsWith('Search '))).toBe(true)
   })
 
   it('reports a refusal that arrives as a 200 with no ticket', async () => {
@@ -190,5 +223,82 @@ describe('searchFoldseek', () => {
     await expect(
       searchFoldseek('A'.repeat(FOLDSEEK_MAX_RESIDUES + 1), { fetch }),
     ).rejects.toThrow('takes at most')
+  })
+})
+
+describe('the steps on their own', () => {
+  const reply = (body: unknown) =>
+    (() =>
+      Promise.resolve(
+        new Response(JSON.stringify(body)),
+      )) as typeof globalThis.fetch
+
+  it('counts residues after cleaning, not raw characters', () => {
+    const atLimit = 'A'.repeat(FOLDSEEK_MAX_RESIDUES)
+    expect(foldseekLengthProblem(`>header\n${atLimit}*\n  `)).toBeUndefined()
+    expect(foldseekLengthProblem(`${atLimit}A`)).toContain('1,201')
+    expect(cleanFoldseekSequence('>h\nmk-x*\nAC')).toBe('MKAC')
+  })
+
+  it('refuses an over-long sequence before any request', async () => {
+    const fetch = (() => {
+      throw new Error('no request expected')
+    }) as unknown as typeof globalThis.fetch
+    await expect(
+      predict3Di('A'.repeat(FOLDSEEK_MAX_RESIDUES + 1), { fetch }),
+    ).rejects.toThrow(/at most 1,200 residues/)
+  })
+
+  it('returns the cleaned sequence and its 3Di string without the quotes', async () => {
+    const fetch = (() =>
+      Promise.resolve(new Response('"DDPVV"\n'))) as typeof globalThis.fetch
+    expect(await predict3Di('>h\nmk', { fetch })).toEqual({
+      aaSequence: 'MK',
+      di3Sequence: 'DDPVV',
+    })
+  })
+
+  it('reports a refusal without a ticket id, and returns an accepted ticket', async () => {
+    const submit = { aaSequence: 'MK', di3Sequence: 'DD', databases: [] }
+    await expect(
+      submitFoldseekSearch(submit, {
+        fetch: reply({ status: 'RATELIMIT' }),
+      }),
+    ).rejects.toThrow(/did not accept the search: {"status":"RATELIMIT"}/)
+    expect(
+      await submitFoldseekSearch(submit, {
+        fetch: reply({ id: 'abc', status: 'PENDING' }),
+      }),
+    ).toEqual({ id: 'abc', status: 'PENDING' })
+  })
+
+  it('reports a rate-limited poll rather than waiting it out', async () => {
+    await expect(
+      waitForFoldseekResults('abc', {
+        fetch: reply([{ status: 'RATELIMIT' }]),
+      }),
+    ).rejects.toThrow(/failed: RATELIMIT/)
+  })
+
+  it('names a poll that answers without a status', async () => {
+    await expect(
+      waitForFoldseekResults('abc', { fetch: reply({ reason: 'down' }) }),
+    ).rejects.toThrow('Foldseek returned no ticket status')
+  })
+
+  it('names a result that lacks its databases', async () => {
+    const fetch = ((input: string) =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify(
+            input.includes('/api/result/')
+              ? { error: 'expired' }
+              : [{ status: 'COMPLETE' }],
+          ),
+        ),
+      )) as typeof globalThis.fetch
+    await expect(waitForFoldseekResults('abc', { fetch })).rejects.toThrow(
+      'Foldseek returned a result with no list of databases',
+    )
   })
 })

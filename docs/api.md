@@ -1558,12 +1558,15 @@ function structureDisplayLabel(options: {
 
 ```ts
 import {
-  caCoordsToPdb,
   foldseekHitPairs,
   foldseekQuery,
+  predict3Di,
   searchFoldseek,
+  submitFoldseekSearch,
+  waitForFoldseekResults,
 } from 'p2s_mapper'
 
+// in one call
 const query = foldseekQuery('MV-LSPADKTNVKAAWGKVGAHAGEYGAEALER')
 const hits = await searchFoldseek(query.sequence, {
   databases: ['pdb100', 'afdb-swissprot'],
@@ -1573,9 +1576,14 @@ for (const hit of hits.slice(0, 3)) {
   // [residue of the input, position in the target]
   foldseekHitPairs(hit, query)
 }
+
+// or a step at a time, to show the 3Di string before spending a search
+const { aaSequence, di3Sequence } = await predict3Di(query.sequence)
+const ticket = await submitFoldseekSearch({ aaSequence, di3Sequence })
+const result = await waitForFoldseekResults(ticket.id)
 ```
 
-<!-- GENERATED: searchFoldseek foldseekQuery foldseekHitPairs parseFoldseekResult FoldseekHit FoldseekQuery FoldseekSearchOptions FOLDSEEK_MAX_RESIDUES FOLDSEEK_DATABASES DEFAULT_FOLDSEEK_DATABASES -->
+<!-- GENERATED: searchFoldseek predict3Di submitFoldseekSearch waitForFoldseekResults foldseekQuery foldseekHitPairs foldseekHits parseFoldseekResponse parseFoldseekResult cleanFoldseekSequence foldseekLengthProblem FoldseekAlignment FoldseekHit FoldseekResult FoldseekDatabaseResult FoldseekTicket FoldseekQuery FoldseekSearchOptions FoldseekWaitOptions FoldseekDatabaseId FOLDSEEK_MAX_RESIDUES FOLDSEEK_DATABASES DEFAULT_FOLDSEEK_DATABASES -->
 
 ```ts
 function searchFoldseek(
@@ -1583,35 +1591,92 @@ function searchFoldseek(
   options?: FoldseekSearchOptions,
 ): Promise<FoldseekHit[]>
 
+function predict3Di(
+  text: string,
+  opts?: FetchOptions,
+): Promise<{ aaSequence: string; di3Sequence: string }>
+
+function submitFoldseekSearch(
+  options: {
+    aaSequence: string
+    di3Sequence: string
+    databases?: readonly string[]
+  },
+  opts?: FetchOptions,
+): Promise<FoldseekTicket>
+
+function waitForFoldseekResults(
+  ticketId: string,
+  options?: FoldseekWaitOptions,
+): Promise<FoldseekResult>
+
 function foldseekQuery(sequence: string): FoldseekQuery
 
 function foldseekHitPairs(
-  hit: FoldseekHit,
+  hit: FoldseekAlignment,
   query: FoldseekQuery,
 ): [number, number][] | undefined
 
+function foldseekHits(result: FoldseekResult): FoldseekHit[]
+
+function parseFoldseekResponse(body: unknown): FoldseekResult
+
 function parseFoldseekResult(body: unknown): FoldseekHit[]
 
-interface FoldseekHit {
-  /** the database the hit came from, such as `pdb100` */
-  db: string
-  /** the target's id followed by its description, as Foldseek names it */
+function cleanFoldseekSequence(text: string): string
+
+function foldseekLengthProblem(text: string): string | undefined
+
+interface FoldseekAlignment {
+  /** the target's id followed by its description */
   target: string
   /** percent identity over the alignment */
   seqId?: number
-  eval?: number
+  alnLength?: number
+  mismatches?: number
+  gapsopened?: number
   /** 1-based positions in the query sent and in the target's sequence */
-  qStartPos: number
-  qEndPos: number
-  dbStartPos: number
-  dbEndPos: number
+  qStartPos?: number
+  qEndPos?: number
+  qLen?: number
+  dbStartPos?: number
+  dbEndPos?: number
+  dbLen?: number
   /** the aligned query and target, `-` for a gap */
-  qAln: string
-  dbAln: string
+  qAln?: string
+  dbAln?: string
+  prob?: number
+  eval?: number
+  score?: number
   /** the target's CA coordinates as `x,y,z,x,y,z,…`, and its sequence */
   tCa?: string
   tSeq?: string
+  taxId?: number
   taxName?: string
+  query?: string
+}
+
+interface FoldseekHit extends FoldseekAlignment {
+  db: string
+}
+
+interface FoldseekResult {
+  query: {
+    header: string
+    sequence: string
+  }
+  results: FoldseekDatabaseResult[]
+}
+
+interface FoldseekDatabaseResult {
+  db: string
+  /** one list of alignments per query; undefined when the database has none */
+  alignments?: FoldseekAlignment[][]
+}
+
+interface FoldseekTicket {
+  id: string
+  status: 'PENDING' | 'RUNNING' | 'COMPLETE' | 'ERROR'
 }
 
 interface FoldseekQuery {
@@ -1621,9 +1686,12 @@ interface FoldseekQuery {
   residueOf: number[]
 }
 
-interface FoldseekSearchOptions extends FetchOptions {
+interface FoldseekSearchOptions extends FoldseekWaitOptions {
   /** database ids to search; PDB and AlphaFold DB Swiss-Prot when unset */
-  databases?: string[]
+  databases?: readonly string[]
+}
+
+interface FoldseekWaitOptions extends FetchOptions {
   /** told what the search is doing, for a progress line */
   onStatus?: (status: string) => void
   /** give up after this long, 180 s when unset */
@@ -1632,28 +1700,43 @@ interface FoldseekSearchOptions extends FetchOptions {
   pollMs?: number
 }
 
+type FoldseekDatabaseId = (typeof FOLDSEEK_DATABASES)[number]['id']
+
 const FOLDSEEK_MAX_RESIDUES: 1200
 
 const FOLDSEEK_DATABASES: readonly [
-  { readonly id: 'pdb100'; readonly label: 'PDB' },
-  { readonly id: 'afdb-swissprot'; readonly label: 'AlphaFold DB, Swiss-Prot' },
-  { readonly id: 'afdb50'; readonly label: 'AlphaFold DB, 50% clusters' },
-  { readonly id: 'afdb-proteome'; readonly label: 'AlphaFold DB, proteomes' },
-  { readonly id: 'cath50'; readonly label: 'CATH' },
+  { readonly id: 'pdb100'; readonly label: 'PDB (100% redundancy)' },
+  {
+    readonly id: 'afdb-swissprot'
+    readonly label: 'AlphaFold DB (Swiss-Prot)'
+  },
+  { readonly id: 'afdb50'; readonly label: 'AlphaFold DB (50% redundancy)' },
+  { readonly id: 'afdb-proteome'; readonly label: 'AlphaFold DB (Proteomes)' },
+  { readonly id: 'cath50'; readonly label: 'CATH (50% redundancy)' },
+  { readonly id: 'mgnify_esm30'; readonly label: 'MGnify ESM30' },
+  { readonly id: 'bfmd'; readonly label: 'BFMD' },
+  { readonly id: 'gmgcl_id'; readonly label: 'GMGCL' },
 ]
 
-const DEFAULT_FOLDSEEK_DATABASES: string[]
+const DEFAULT_FOLDSEEK_DATABASES: FoldseekDatabaseId[]
 ```
 
 <!-- /GENERATED -->
 
-- `searchFoldseek` sends the sequence to `3di.foldseek.com` for its 3Di string,
-  submits a `3diaa` search to `search.foldseek.com`, polls the ticket, and
-  returns the hits of every database. It waits for Foldseek's queue, about 8 s
-  for a protein of 140 residues, so offer it as an explicit action.
-- It throws on a sequence over 1200 residues, on a refusal (the server answers a
-  rate limit or maintenance as a 200 with no ticket), on a failed search, and
-  when the time budget runs out. `signal` cancels it.
+- Each step sends to `3di.foldseek.com` or `search.foldseek.com` and waits for
+  their queue, about 8 s for a protein of 140 residues, so offer a search as an
+  explicit action.
+- `predict3Di` accepts FASTA, cleans it, and throws before any request on a
+  sequence over 1,200 residues. The limit counts the cleaned residues.
+- `submitFoldseekSearch` reports a refusal. The server answers a rate limit or
+  maintenance as a 200 with no ticket id, which would otherwise be polled.
+- `waitForFoldseekResults` throws on a failed search, on a ticket whose status
+  is not pending, running or complete, and when the time budget runs out.
+  `signal` cancels it.
+- `parseFoldseekResponse` keeps every field the server sent, one list of
+  alignments per query and per database. `parseFoldseekResult` and
+  `searchFoldseek` list the first query's alignments of all databases as hits
+  that name their database.
 - `foldseekQuery` keeps the twenty standard amino acids, since the predictor
   cannot read X, U or B. `residueOf` maps each kept position back to the input
   residue, and `foldseekHitPairs` uses it, so a hit's pairs are in the input's
@@ -1662,8 +1745,9 @@ const DEFAULT_FOLDSEEK_DATABASES: string[]
   from the same sequence. An AlphaFold F1 model is the UniProt sequence. A PDB
   chain's database sequence holds only residues with coordinates, so draw that
   hit from its `tCa` with `caCoordsToPdb`, which numbers the same way.
-- `foldseekHitPairs` returns `undefined` for a hit whose alignment disagrees
-  with its own start and end, which no mapping should be built from.
+- `foldseekHitPairs` returns `undefined` for a hit with no alignment, or one
+  that disagrees with its own start and end, which no mapping should be built
+  from.
 
 ### Foldseek hits
 
