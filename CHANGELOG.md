@@ -1,3 +1,9 @@
+## [2.3.0](https://github.com/GMOD/p2s_mapper/compare/v2.2.0...v2.3.0) (2026-10-15)
+
+### Other Changes
+
+- Split the Foldseek search into steps and keep every field of a hit ([725541b](https://github.com/GMOD/p2s_mapper/commit/725541b0d58d294fccde7c64f742a6fb1279ec54))
+
 ## [2.2.0](https://github.com/GMOD/p2s_mapper/compare/v2.1.0...v2.2.0) (2026-10-15)
 
 ### Other Changes
