@@ -2,8 +2,11 @@ import { describe, expect, it, test, vi } from 'vitest'
 
 import {
   chooseUniProtMappingForEntity,
+  fetchLabelChains,
   fetchPdbEntry,
   fetchUniProtStructureMappings,
+  labelChainsQuery,
+  parseLabelChains,
   parsePdbEntry,
   pdbEntryQuery,
 } from '../src/index.ts'
@@ -353,5 +356,72 @@ describe('fetchPdbEntry', () => {
       fetchPdbEntry('1tup', { fetch, signal: controller.signal }),
     ).rejects.toThrow()
     expect(fetch).toHaveBeenCalledTimes(1)
+  })
+})
+
+// Abridged live answer to `labelChainsQuery` for 1HZH, an antibody whose author
+// chains H, K, L and M are label chains A, B, C and D
+const LABEL_CHAINS_1HZH = {
+  entry: {
+    polymer_entities: [
+      {
+        rcsb_polymer_entity_container_identifiers: {
+          asym_ids: ['A', 'B'],
+          auth_asym_ids: ['H', 'K'],
+        },
+      },
+      {
+        rcsb_polymer_entity_container_identifiers: {
+          asym_ids: ['C', 'D'],
+          auth_asym_ids: ['L', 'M'],
+        },
+      },
+    ],
+  },
+}
+
+describe('label chains', () => {
+  it('asks for both id lists of every entity, for an upper-cased id', () => {
+    const query = labelChainsQuery('1hzh')
+    expect(query).toContain('entry_id: "1HZH"')
+    expect(query).toContain('asym_ids auth_asym_ids')
+  })
+
+  it('maps each author chain to its label id through the parallel lists', () => {
+    expect([...parseLabelChains(LABEL_CHAINS_1HZH)]).toEqual([
+      ['H', 'A'],
+      ['K', 'B'],
+      ['L', 'C'],
+      ['M', 'D'],
+    ])
+  })
+
+  it('skips an entity whose two lists differ in length', () => {
+    const map = parseLabelChains({
+      entry: {
+        polymer_entities: [
+          {
+            rcsb_polymer_entity_container_identifiers: {
+              asym_ids: ['A'],
+              auth_asym_ids: ['H', 'K'],
+            },
+          },
+        ],
+      },
+    })
+    expect(map.size).toBe(0)
+  })
+
+  it('is empty for an entry RCSB does not know', () => {
+    expect(parseLabelChains({ entry: null }).size).toBe(0)
+    expect(parseLabelChains(undefined).size).toBe(0)
+  })
+
+  it('fetches and parses through the caller’s fetch', async () => {
+    const fetch = (() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ data: LABEL_CHAINS_1HZH })),
+      )) as typeof globalThis.fetch
+    expect((await fetchLabelChains('1HZH', { fetch })).get('L')).toBe('C')
   })
 })

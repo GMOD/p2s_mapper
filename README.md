@@ -10,6 +10,9 @@ Functionality
 - Picks the right chain and flags a poor match
 - Finds structures for a gene
 - Places UniProt annotations on a PDB entry
+- Searches Foldseek for structures like a sequence, with the residue pairs of
+  each hit
+- Looks a UniProt entry name up, and an author chain's `label_asym_id`
 - Works alongside [g2p_mapper](https://github.com/GMOD/g2p_mapper) to map genome
   position ↔ protein sequence ↔ 3D residue
 - No React, JBrowse or Mol\* dependency

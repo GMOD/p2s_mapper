@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { buildGeneNameQuery, searchUniProtEntries } from '../src/index.ts'
+import {
+  buildGeneNameQuery,
+  searchUniProtByEntryName,
+  searchUniProtEntries,
+} from '../src/index.ts'
 
 function reviewedEntry(accession: string, taxon: string) {
   return {
@@ -176,5 +180,32 @@ describe('searchUniProtEntries', () => {
     await expect(
       searchUniProtEntries({ recognizedIds: ['ENST00000123'] }),
     ).rejects.toThrow(/rest\.uniprot\.org/)
+  })
+})
+
+describe('searchUniProtByEntryName', () => {
+  it('asks the id field and lists reviewed entries first', async () => {
+    const calls = stubUniProt(() => ({
+      ok: true,
+      results: [
+        {
+          entryType: 'UniProtKB unreviewed (TrEMBL)',
+          primaryAccession: 'D1MGQ2',
+        },
+        reviewedEntry('P69905', 'Homo sapiens'),
+      ],
+    }))
+    const entries = await searchUniProtByEntryName('HBA_HUMAN')
+    expect(queryOf(calls[0]!)).toBe('id:HBA_HUMAN')
+    expect(entries.map(e => [e.accession, e.isReviewed])).toEqual([
+      ['P69905', true],
+      ['D1MGQ2', false],
+    ])
+  })
+
+  it('keeps only the characters an entry name has, so it cannot add a field', async () => {
+    const calls = stubUniProt(() => ({ ok: true }))
+    await searchUniProtByEntryName('HBA_HUMAN OR reviewed:false')
+    expect(queryOf(calls[0]!)).toBe('id:HBA_HUMANORreviewedfalse')
   })
 })

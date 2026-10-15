@@ -95,6 +95,27 @@ export function buildGeneNameQuery(
     .join(' AND ')
 }
 
+/**
+ * The entries named by a UniProt entry name such as `HBA_HUMAN`, reviewed ones
+ * first. An entry name is not a cross-reference to another database, so
+ * `searchUniProtEntries` does not take it; this asks UniProt's `id` field. A
+ * name can match a retired entry that UniProt lists without its fields, so an
+ * entry is kept only if it carries an accession.
+ */
+export async function searchUniProtByEntryName(
+  entryName: string,
+  opts?: FetchOptions,
+): Promise<UniProtEntry[]> {
+  const entries = await searchUniProt(
+    `id:${entryName.replaceAll(/[^A-Za-z0-9_]/g, '')}`,
+    5,
+    opts,
+  )
+  return entries
+    .filter(e => e.accession)
+    .toSorted((a, b) => Number(b.isReviewed) - Number(a.isReviewed))
+}
+
 interface SearchAttempt {
   entries: UniProtEntry[]
   error: unknown

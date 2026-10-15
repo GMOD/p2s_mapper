@@ -114,6 +114,53 @@ export async function fetchPdbEntry(
   }
 }
 
+/**
+ * The two chain ids of every polymer entity of an entry. RCSB lists an
+ * entity's `asym_ids` (mmCIF `label_asym_id`) and `auth_asym_ids` (the
+ * depositor's) as parallel lists.
+ */
+export function labelChainsQuery(pdbId: string) {
+  return `{ entry(entry_id: "${pdbId.toUpperCase()}") { polymer_entities { rcsb_polymer_entity_container_identifiers { asym_ids auth_asym_ids } } } }`
+}
+
+/**
+ * Parses the `data` of `labelChainsQuery` into a map from each author chain id
+ * to its `label_asym_id`. The two differ for many entries: 1HZH's author chains
+ * H and L are label chains A and C. A mapping names a chain by one kind of id
+ * and a reader has to know which, since a label id of one chain can equal the
+ * author id of another.
+ */
+export function parseLabelChains(data: unknown) {
+  const chains = new Map<string, string>()
+  const entry = isRecord(data) ? data.entry : undefined
+  const entities = isRecord(entry) ? entry.polymer_entities : undefined
+  for (const entity of Array.isArray(entities) ? entities : []) {
+    const ids = isRecord(entity)
+      ? entity.rcsb_polymer_entity_container_identifiers
+      : undefined
+    const auth = strings(isRecord(ids) ? ids.auth_asym_ids : undefined)
+    const label = strings(isRecord(ids) ? ids.asym_ids : undefined)
+    if (auth.length === label.length) {
+      for (const [i, chain] of auth.entries()) {
+        chains.set(chain, label[i]!)
+      }
+    }
+  }
+  return chains
+}
+
+/** Author chain id to `label_asym_id` for every chain of an entry. */
+export async function fetchLabelChains(pdbId: string, opts?: FetchOptions) {
+  return parseLabelChains(
+    await graphqlFetch(
+      RCSB_DATA_GRAPHQL_URL,
+      labelChainsQuery(pdbId),
+      undefined,
+      opts,
+    ),
+  )
+}
+
 /** The entry's UniProt alignment alone. */
 export async function fetchUniProtStructureMappings(
   pdbId: string,

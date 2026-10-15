@@ -1070,7 +1070,7 @@ entry.mappings
 await fetchUniProtStructureMappings('1tup') // the mappings alone
 ```
 
-<!-- GENERATED: fetchPdbEntry fetchUniProtStructureMappings parsePdbEntry pdbEntryQuery PdbEntry UniProtStructureMapping UniProtStructureSegment graphqlFetch RCSB_DATA_GRAPHQL_URL -->
+<!-- GENERATED: fetchPdbEntry fetchUniProtStructureMappings parsePdbEntry pdbEntryQuery PdbEntry UniProtStructureMapping UniProtStructureSegment graphqlFetch RCSB_DATA_GRAPHQL_URL labelChainsQuery parseLabelChains fetchLabelChains -->
 
 ```ts
 function fetchPdbEntry(pdbId: string, opts?: FetchOptions): Promise<PdbEntry>
@@ -1117,6 +1117,15 @@ function graphqlFetch(
 ): Promise<unknown>
 
 const RCSB_DATA_GRAPHQL_URL: 'https://data.rcsb.org/graphql'
+
+function labelChainsQuery(pdbId: string): string
+
+function parseLabelChains(data: unknown): Map<string, string>
+
+function fetchLabelChains(
+  pdbId: string,
+  opts?: FetchOptions,
+): Promise<Map<string, string>>
 ```
 
 <!-- /GENERATED -->
@@ -1248,7 +1257,7 @@ entries[0]
 //   isReviewed: true }
 ```
 
-<!-- GENERATED: searchUniProtEntries UniProtEntry UniProtSearchResult buildGeneNameQuery -->
+<!-- GENERATED: searchUniProtEntries searchUniProtByEntryName UniProtEntry UniProtSearchResult buildGeneNameQuery -->
 
 ```ts
 function searchUniProtEntries(
@@ -1260,6 +1269,11 @@ function searchUniProtEntries(
   },
   opts?: FetchOptions,
 ): Promise<UniProtSearchResult>
+
+function searchUniProtByEntryName(
+  entryName: string,
+  opts?: FetchOptions,
+): Promise<UniProtEntry[]>
 
 interface UniProtEntry {
   accession: string
@@ -1285,6 +1299,10 @@ function buildGeneNameQuery(
 
 <!-- /GENERATED -->
 
+- `searchUniProtByEntryName` takes an entry name such as `HBA_HUMAN`, which is
+  not a cross-reference to another database, so `searchUniProtEntries` does not
+  search it. It asks UniProt's `id` field, drops a retired entry that has no
+  accession, and lists reviewed entries first.
 - `searchUniProtEntries` searches each recognized id as a UniProt
   cross-reference. It searches `geneId` too when it is a recognized id, without
   its version suffix.
@@ -1535,6 +1553,117 @@ function structureDisplayLabel(options: {
 - `getPdbIdFromUrl` recognizes only the PDB archive's own hosts, so the package
   never gives a user's model that happens to be named `1abc.cif` the annotations
   of entry 1ABC.
+
+### Searching Foldseek
+
+```ts
+import {
+  caCoordsToPdb,
+  foldseekHitPairs,
+  foldseekQuery,
+  searchFoldseek,
+} from 'p2s_mapper'
+
+const query = foldseekQuery('MV-LSPADKTNVKAAWGKVGAHAGEYGAEALER')
+const hits = await searchFoldseek(query.sequence, {
+  databases: ['pdb100', 'afdb-swissprot'],
+  onStatus: status => console.log(status),
+})
+for (const hit of hits.slice(0, 3)) {
+  // [residue of the input, position in the target]
+  foldseekHitPairs(hit, query)
+}
+```
+
+<!-- GENERATED: searchFoldseek foldseekQuery foldseekHitPairs parseFoldseekResult FoldseekHit FoldseekQuery FoldseekSearchOptions FOLDSEEK_MAX_RESIDUES FOLDSEEK_DATABASES DEFAULT_FOLDSEEK_DATABASES -->
+
+```ts
+function searchFoldseek(
+  sequence: string,
+  options?: FoldseekSearchOptions,
+): Promise<FoldseekHit[]>
+
+function foldseekQuery(sequence: string): FoldseekQuery
+
+function foldseekHitPairs(
+  hit: FoldseekHit,
+  query: FoldseekQuery,
+): [number, number][] | undefined
+
+function parseFoldseekResult(body: unknown): FoldseekHit[]
+
+interface FoldseekHit {
+  /** the database the hit came from, such as `pdb100` */
+  db: string
+  /** the target's id followed by its description, as Foldseek names it */
+  target: string
+  /** percent identity over the alignment */
+  seqId?: number
+  eval?: number
+  /** 1-based positions in the query sent and in the target's sequence */
+  qStartPos: number
+  qEndPos: number
+  dbStartPos: number
+  dbEndPos: number
+  /** the aligned query and target, `-` for a gap */
+  qAln: string
+  dbAln: string
+  /** the target's CA coordinates as `x,y,z,x,y,z,…`, and its sequence */
+  tCa?: string
+  tSeq?: string
+  taxName?: string
+}
+
+interface FoldseekQuery {
+  /** the twenty standard amino acids of the input, in order */
+  sequence: string
+  /** the 1-based residue of the input at each position of `sequence` */
+  residueOf: number[]
+}
+
+interface FoldseekSearchOptions extends FetchOptions {
+  /** database ids to search; PDB and AlphaFold DB Swiss-Prot when unset */
+  databases?: string[]
+  /** told what the search is doing, for a progress line */
+  onStatus?: (status: string) => void
+  /** give up after this long, 180 s when unset */
+  timeoutMs?: number
+  /** wait this long between polls, 1 s when unset */
+  pollMs?: number
+}
+
+const FOLDSEEK_MAX_RESIDUES: 1200
+
+const FOLDSEEK_DATABASES: readonly [
+  { readonly id: 'pdb100'; readonly label: 'PDB' },
+  { readonly id: 'afdb-swissprot'; readonly label: 'AlphaFold DB, Swiss-Prot' },
+  { readonly id: 'afdb50'; readonly label: 'AlphaFold DB, 50% clusters' },
+  { readonly id: 'afdb-proteome'; readonly label: 'AlphaFold DB, proteomes' },
+  { readonly id: 'cath50'; readonly label: 'CATH' },
+]
+
+const DEFAULT_FOLDSEEK_DATABASES: string[]
+```
+
+<!-- /GENERATED -->
+
+- `searchFoldseek` sends the sequence to `3di.foldseek.com` for its 3Di string,
+  submits a `3diaa` search to `search.foldseek.com`, polls the ticket, and
+  returns the hits of every database. It waits for Foldseek's queue, about 8 s
+  for a protein of 140 residues, so offer it as an explicit action.
+- It throws on a sequence over 1200 residues, on a refusal (the server answers a
+  rate limit or maintenance as a 200 with no ticket), on a failed search, and
+  when the time budget runs out. `signal` cancels it.
+- `foldseekQuery` keeps the twenty standard amino acids, since the predictor
+  cannot read X, U or B. `residueOf` maps each kept position back to the input
+  residue, and `foldseekHitPairs` uses it, so a hit's pairs are in the input's
+  own numbering.
+- A target position is a `label_seq_id` only where the structure drawn is built
+  from the same sequence. An AlphaFold F1 model is the UniProt sequence. A PDB
+  chain's database sequence holds only residues with coordinates, so draw that
+  hit from its `tCa` with `caCoordsToPdb`, which numbers the same way.
+- `foldseekHitPairs` returns `undefined` for a hit whose alignment disagrees
+  with its own start and end, which no mapping should be built from.
 
 ### Foldseek hits
 
