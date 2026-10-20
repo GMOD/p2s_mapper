@@ -1,3 +1,18 @@
+## [2.4.0](https://github.com/GMOD/p2s_mapper/compare/v2.3.0...v2.4.0) (2026-10-20)
+
+### Features
+
+- Keep AlphaFold's AlphaMissense url on each model ([87c0129](https://github.com/GMOD/p2s_mapper/commit/87c0129f1d7ef9995c45cb007aad7ce8c6997445))
+
+### Other Changes
+
+- Remove timeout's abort listener once it resolves ([9f6717b](https://github.com/GMOD/p2s_mapper/commit/9f6717bca514623a0ba62e7e399e40810f701d77))
+- Stop a Foldseek wait as soon as the caller aborts ([3511c3d](https://github.com/GMOD/p2s_mapper/commit/3511c3d9ae1ea627ceab72f3c422296508625883))
+- Escape ids in the RCSB GraphQL queries; share the JSON guards ([84e5ff9](https://github.com/GMOD/p2s_mapper/commit/84e5ff907c0719d5bcf64bb39c72a9ac7bdda68f))
+- Skip pickStructureSequence's alignment when a chain matches exactly ([1b11222](https://github.com/GMOD/p2s_mapper/commit/1b112228ad004a7fa4d581dcc923392692440298))
+- Let an abort of UniProt's descendant search reach the caller ([90c1fad](https://github.com/GMOD/p2s_mapper/commit/90c1faddf8f234b276ebc586fc53209558c8fef8))
+- Share the residue walk; drop duplicated counting and padding helpers ([a17933a](https://github.com/GMOD/p2s_mapper/commit/a17933a464b9475978290d416bbaf1481f71223d))
+
 ## [2.3.0](https://github.com/GMOD/p2s_mapper/compare/v2.2.0...v2.3.0) (2026-10-15)
 
 ### Other Changes
