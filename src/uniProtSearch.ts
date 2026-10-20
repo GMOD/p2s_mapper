@@ -153,14 +153,19 @@ async function searchByGeneName(
     // species with reviewed subspecies entries (human and Neanderthal) they
     // turn one answer into two.
     // When the descendant search fails, the taxon's own empty result stands
-    // rather than becoming an error.
+    // rather than becoming an error, unless the caller aborted it.
     const entries =
       exact.length === 0 && organismId
         ? await searchUniProt(
             buildGeneNameQuery(geneName, organismId, 'taxonomy_id'),
             5,
             opts,
-          ).catch(() => exact)
+          ).catch((e: unknown) => {
+            if (opts?.signal?.aborted) {
+              throw e
+            }
+            return exact
+          })
         : exact
     return { entries, error: undefined }
   } catch (e) {

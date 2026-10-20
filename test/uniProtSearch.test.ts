@@ -106,6 +106,24 @@ describe('searchUniProtEntries', () => {
     expect(result).toEqual({ entries: [], attemptedCount: 1, failedCount: 0 })
   })
 
+  it('rejects with the abort when the caller aborts the descendant search', async () => {
+    const controller = new AbortController()
+    const reason = new Error('dialog closed')
+    vi.stubGlobal('fetch', (url: string) => {
+      if (queryOf(url).includes('taxonomy_id')) {
+        controller.abort(reason)
+        return Promise.reject(reason)
+      }
+      return Promise.resolve(new Response(JSON.stringify({ results: [] })))
+    })
+    await expect(
+      searchUniProtEntries(
+        { geneName: 'cdc2', organismId: 4896 },
+        { signal: controller.signal },
+      ),
+    ).rejects.toBe(reason)
+  })
+
   it('does not ask the descendants when the taxon answers', async () => {
     const calls = stubUniProt(() => ({
       ok: true,
