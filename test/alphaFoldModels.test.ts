@@ -20,6 +20,8 @@ test('reads the prediction API entries it can open, skipping the rest', () => {
         cifUrl: 'https://alphafold.ebi.ac.uk/files/AF-P04637-2-F1-model_v6.cif',
         plddtDocUrl: 'https://alphafold.ebi.ac.uk/files/c.json',
         globalMetricValue: 75.1,
+        amAnnotationsUrl:
+          'https://alphafold.ebi.ac.uk/files/AF-P04637-2-F1-aa-substitutions.csv',
         sequence: 'MEEP',
       },
       { uniprotAccession: 'P1' },
@@ -31,6 +33,8 @@ test('reads the prediction API entries it can open, skipping the rest', () => {
       url: 'https://alphafold.ebi.ac.uk/files/AF-P04637-2-F1-model_v6.cif',
       confidenceUrl: 'https://alphafold.ebi.ac.uk/files/c.json',
       meanPlddt: 75.1,
+      alphaMissenseUrl:
+        'https://alphafold.ebi.ac.uk/files/AF-P04637-2-F1-aa-substitutions.csv',
       sequence: 'MEEP',
     },
   ])

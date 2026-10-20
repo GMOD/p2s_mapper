@@ -1395,6 +1395,9 @@ interface AlphaFoldModel {
   confidenceUrl?: string
   /** mean per-residue confidence (pLDDT), 0-100 */
   meanPlddt?: number
+  /** AlphaMissense's score for every substitution, as CSV. The fragment in
+   * the file name moves with the model, so take it from here. */
+  alphaMissenseUrl?: string
   sequence: string
 }
 ```

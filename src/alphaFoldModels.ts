@@ -1,7 +1,7 @@
 import { httpError, rawfetch } from './fetchUtils.ts'
+import { stripStopCodon } from './stripStopCodon.ts'
 
 import type { FetchOptions } from './fetchUtils.ts'
-import { stripStopCodon } from './stripStopCodon.ts'
 
 export interface AlphaFoldModel {
   /** UniProt accession, with an isoform suffix on an isoform model */
@@ -12,6 +12,9 @@ export interface AlphaFoldModel {
   confidenceUrl?: string
   /** mean per-residue confidence (pLDDT), 0-100 */
   meanPlddt?: number
+  /** AlphaMissense's score for every substitution, as CSV. The fragment in
+   * the file name moves with the model, so take it from here. */
+  alphaMissenseUrl?: string
   sequence: string
 }
 
@@ -21,6 +24,7 @@ interface PredictionEntry {
   cifUrl?: unknown
   plddtDocUrl?: unknown
   globalMetricValue?: unknown
+  amAnnotationsUrl?: unknown
   sequence?: unknown
 }
 
@@ -45,6 +49,10 @@ export function parseAlphaFoldModels(json: unknown): AlphaFoldModel[] {
             meanPlddt:
               typeof e.globalMetricValue === 'number'
                 ? e.globalMetricValue
+                : undefined,
+            alphaMissenseUrl:
+              typeof e.amAnnotationsUrl === 'string'
+                ? e.amAnnotationsUrl
                 : undefined,
             sequence: e.sequence,
           },
