@@ -140,18 +140,22 @@ export function abortError(signal: AbortSignal) {
 
 export function timeout(time: number, signal?: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(abortError(signal))
-    } else {
-      const id = setTimeout(resolve, time)
-      signal?.addEventListener(
-        'abort',
-        () => {
-          clearTimeout(id)
-          reject(abortError(signal))
-        },
-        { once: true },
-      )
+    if (!signal) {
+      setTimeout(resolve, time)
+      return
     }
+    if (signal.aborted) {
+      reject(abortError(signal))
+      return
+    }
+    const onAbort = () => {
+      clearTimeout(id)
+      reject(abortError(signal))
+    }
+    const id = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort)
+      resolve()
+    }, time)
+    signal.addEventListener('abort', onAbort, { once: true })
   })
 }

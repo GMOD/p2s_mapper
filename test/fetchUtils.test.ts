@@ -32,6 +32,13 @@ test('timeout preserves a custom Error abort reason', async () => {
   await expect(timeout(10_000, controller.signal)).rejects.toBe(reason)
 })
 
+test('timeout removes its abort listener once it resolves', async () => {
+  const controller = new AbortController()
+  const remove = vi.spyOn(controller.signal, 'removeEventListener')
+  await timeout(1, controller.signal)
+  expect(remove).toHaveBeenCalledWith('abort', expect.any(Function))
+})
+
 const URL_UNDER_TEST = 'https://rest.uniprot.org/uniprotkb/search?query=x'
 
 afterEach(() => {
