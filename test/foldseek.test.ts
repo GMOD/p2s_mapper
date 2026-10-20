@@ -216,6 +216,20 @@ describe('searchFoldseek', () => {
     ).rejects.toThrow('timed out')
   })
 
+  it('stops waiting as soon as the caller aborts, with its reason', async () => {
+    const controller = new AbortController()
+    const reason = new Error('dialog closed')
+    const search = searchFoldseek('ACDEF', {
+      fetch: server(['PENDING']),
+      pollMs: 60_000,
+      signal: controller.signal,
+    })
+    setTimeout(() => {
+      controller.abort(reason)
+    }, 20)
+    await expect(search).rejects.toBe(reason)
+  })
+
   it('refuses a sequence over the predictor limit before any request', async () => {
     const fetch = (() => {
       throw new Error('no request expected')

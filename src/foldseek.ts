@@ -6,7 +6,13 @@
 // for their queue (about 8 s for a protein of 140 residues on a quiet day), so
 // a caller offers it as an explicit action.
 
-import { httpError, myfetch, rawfetch } from './fetchUtils.ts'
+import {
+  abortError,
+  httpError,
+  myfetch,
+  rawfetch,
+  timeout,
+} from './fetchUtils.ts'
 
 import type { FetchOptions } from './fetchUtils.ts'
 
@@ -349,7 +355,7 @@ export async function waitForFoldseekResults(
   const startedAt = Date.now()
   while (Date.now() - startedAt < timeoutMs) {
     if (opts.signal?.aborted) {
-      throw new DOMException('The search was cancelled', 'AbortError')
+      throw abortError(opts.signal)
     }
     const res = await myfetch('https://search.foldseek.com/api/tickets', {
       ...opts,
@@ -366,7 +372,7 @@ export async function waitForFoldseekResults(
     if (state === 'COMPLETE') {
       onStatus?.('Fetching results...')
       const result = await myfetch(
-        `https://search.foldseek.com/api/result/${ticketId}/0`,
+        `https://search.foldseek.com/api/result/${encodeURIComponent(ticketId)}/0`,
         opts,
       )
       return parseFoldseekResponse(await result.json())
@@ -381,7 +387,7 @@ export async function waitForFoldseekResults(
     onStatus?.(
       `Search ${state.toLowerCase()}... (${Math.round((Date.now() - startedAt) / 1000)}s)`,
     )
-    await new Promise(resolve => setTimeout(resolve, pollMs))
+    await timeout(pollMs, opts.signal ?? undefined)
   }
   throw new Error(
     `Foldseek search timed out after ${Math.round(timeoutMs / 1000)}s`,
