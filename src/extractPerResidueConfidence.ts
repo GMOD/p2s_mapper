@@ -1,3 +1,5 @@
+import { valuesByEntityAndLabelSeqId } from './residueWalk.ts'
+
 // Minimal shape of the molstar Model fields we read. AlphaFold and ColabFold
 // store the per-residue pLDDT in the B-factor column (B_iso_or_equiv), so the
 // first atom of each residue yields pLDDT for a predicted model and the
@@ -47,24 +49,10 @@ export function extractPerResidueConfidence(
     return undefined
   }
   const { B_iso_or_equiv } = data.atomicConformation
-  const { residueAtomSegments, chainAtomSegments, chains, residues } =
-    data.atomicHierarchy
-  const byEntity = new Map<string, Map<number, number>>()
-  for (let residue = 0; residue < residueAtomSegments.count; residue++) {
-    const atom = residueAtomSegments.offsets[residue]!
-    const entityId = chains.label_entity_id.value(
-      chainAtomSegments.index[atom]!,
-    )
-    let values = byEntity.get(entityId)
-    if (!values) {
-      values = new Map()
-      byEntity.set(entityId, values)
-    }
-    const seqId = residues.label_seq_id.value(residue)
-    if (!values.has(seqId)) {
-      values.set(seqId, B_iso_or_equiv.value(atom))
-    }
-  }
+  const byEntity = valuesByEntityAndLabelSeqId(
+    data.atomicHierarchy,
+    (_residue, atom) => B_iso_or_equiv.value(atom),
+  )
   return [...byEntity].map(([entityId, byLabelSeqId]) => ({
     entityId,
     byLabelSeqId,

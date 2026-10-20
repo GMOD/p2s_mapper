@@ -7,10 +7,8 @@ export const ALIGNMENT_ALGORITHMS = {
 
 export const DEFAULT_ALIGNMENT_ALGORITHM: AlignmentAlgorithm = 'smith_waterman'
 
-export const ALIGNMENT_ALGORITHM_VALUES: AlignmentAlgorithm[] = [
-  'needleman_wunsch',
-  'smith_waterman',
-]
+export const ALIGNMENT_ALGORITHM_VALUES: AlignmentAlgorithm[] =
+  Object.values(ALIGNMENT_ALGORITHMS)
 
 /** Parses an untrusted algorithm name, such as a URL parameter, falling back
  * to Smith-Waterman. */

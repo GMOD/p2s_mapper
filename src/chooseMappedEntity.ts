@@ -4,7 +4,7 @@ import {
   selfScore,
 } from './pairwiseAlignment.ts'
 import { stripStopCodon } from './stripStopCodon.ts'
-import { structureAlignedSeq, transcriptAlignedSeq } from './mappings.ts'
+import { alignmentQuality } from './alignmentQuality.ts'
 
 import type { PairwiseAlignment } from './mappings.ts'
 import type { AlignmentAlgorithm } from './types.ts'
@@ -80,20 +80,6 @@ export function explainedFraction(
   )
 }
 
-function countMatches(pa: PairwiseAlignment) {
-  const a = transcriptAlignedSeq(pa)
-  const b = structureAlignedSeq(pa)
-  let matches = 0
-  for (let i = 0; i < a.length; i++) {
-    const ca = a[i]
-    const cb = b[i]
-    if (ca !== '-' && cb !== '-' && ca?.toUpperCase() === cb?.toUpperCase()) {
-      matches++
-    }
-  }
-  return matches
-}
-
 /**
  * Align one transcript to one entity, stop codons stripped on both sides. An
  * exact match skips the DP entirely; an oversized pair returns undefined rather
@@ -125,7 +111,7 @@ export function alignTranscriptToEntity(
     }
   }
   const { alignment, score } = scoredAlignment(t, s, algorithm)
-  const matches = countMatches(alignment)
+  const matches = alignmentQuality(alignment).identical
   return {
     alignment,
     matches,

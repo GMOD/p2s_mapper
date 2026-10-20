@@ -1,3 +1,5 @@
+import { valuesByEntityAndLabelSeqId } from './residueWalk.ts'
+
 /** A polymer entity of a loaded structure: its mmCIF entity id, its one-letter
  * sequence, and the molstar `label_seq_id` of each residue.
  *
@@ -78,29 +80,14 @@ export interface StructureModel {
 /** Observed residues' label_seq_id -> auth_seq_id, per entity. The first chain
  * carrying an entity wins, so a homodimer's copies agree. */
 function authSeqIdsByEntity(model: StructureModel) {
-  const hierarchy = model.obj?.data.atomicHierarchy
-  const byEntity = new Map<string, Map<number, number>>()
   const { residues, residueAtomSegments, chainAtomSegments, chains } =
-    hierarchy ?? {}
-  if (!residues || !residueAtomSegments || !chainAtomSegments || !chains) {
-    return undefined
-  }
-  for (let residue = 0; residue < residueAtomSegments.count; residue++) {
-    const atom = residueAtomSegments.offsets[residue]!
-    const entityId = chains.label_entity_id.value(
-      chainAtomSegments.index[atom]!,
-    )
-    let ids = byEntity.get(entityId)
-    if (!ids) {
-      ids = new Map()
-      byEntity.set(entityId, ids)
-    }
-    const labelSeqId = residues.label_seq_id.value(residue)
-    if (!ids.has(labelSeqId)) {
-      ids.set(labelSeqId, residues.auth_seq_id.value(residue))
-    }
-  }
-  return byEntity
+    model.obj?.data.atomicHierarchy ?? {}
+  return residues && residueAtomSegments && chainAtomSegments && chains
+    ? valuesByEntityAndLabelSeqId(
+        { residues, residueAtomSegments, chainAtomSegments, chains },
+        residue => residues.auth_seq_id.value(residue),
+      )
+    : undefined
 }
 
 /**
