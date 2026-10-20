@@ -124,16 +124,15 @@ export function pickStructureSequence(
   )
   const translated = new Set(translations)
   const exact = structureSequences?.find(s => translated.has(stripStopCodon(s)))
+  if (exact !== undefined || !structureSequences) {
+    return exact
+  }
   const longest = translations.reduce<string | undefined>(
     (a, b) => (a !== undefined && a.length >= b.length ? a : b),
     undefined,
   )
-  const aligned =
-    structureSequences && longest
-      ? chooseMappedEntity(longest, structureSequences, 'smith_waterman')
-      : undefined
-  return (
-    exact ??
-    (aligned ? structureSequences?.[aligned.index] : structureSequences?.[0])
-  )
+  const aligned = longest
+    ? chooseMappedEntity(longest, structureSequences, 'smith_waterman')
+    : undefined
+  return structureSequences[aligned?.index ?? 0]
 }
