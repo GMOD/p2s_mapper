@@ -11,6 +11,7 @@ import {
   jsonfetch,
   timeout,
 } from './fetchUtils.ts'
+import { finiteNumber, graphqlString, isRecord, strings } from './json.ts'
 
 import type { FetchOptions } from './fetchUtils.ts'
 import type {
@@ -29,7 +30,7 @@ export interface PdbEntry {
 }
 
 export function pdbEntryQuery(pdbId: string) {
-  return `{ entry(entry_id: "${pdbId.toUpperCase()}") { polymer_entities {
+  return `{ entry(entry_id: ${graphqlString(pdbId.toUpperCase())}) { polymer_entities {
   rcsb_id
   entity_poly { type pdbx_seq_one_letter_code_can }
   rcsb_polymer_entity_container_identifiers { auth_asym_ids }
@@ -120,7 +121,7 @@ export async function fetchPdbEntry(
  * depositor's) as parallel lists.
  */
 export function labelChainsQuery(pdbId: string) {
-  return `{ entry(entry_id: "${pdbId.toUpperCase()}") { polymer_entities { rcsb_polymer_entity_container_identifiers { asym_ids auth_asym_ids } } } }`
+  return `{ entry(entry_id: ${graphqlString(pdbId.toUpperCase())}) { polymer_entities { rcsb_polymer_entity_container_identifiers { asym_ids auth_asym_ids } } } }`
 }
 
 /**
@@ -167,20 +168,6 @@ export async function fetchUniProtStructureMappings(
   opts?: FetchOptions,
 ) {
   return (await fetchPdbEntry(pdbId, opts)).mappings
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function finiteNumber(value: unknown) {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
-}
-
-function strings(value: unknown) {
-  return Array.isArray(value)
-    ? value.filter((v): v is string => typeof v === 'string')
-    : []
 }
 
 /**

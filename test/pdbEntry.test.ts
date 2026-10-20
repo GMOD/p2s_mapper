@@ -2,6 +2,7 @@ import { describe, expect, it, test, vi } from 'vitest'
 
 import {
   chooseUniProtMappingForEntity,
+  entityAlignmentsQuery,
   fetchLabelChains,
   fetchPdbEntry,
   fetchUniProtStructureMappings,
@@ -157,6 +158,14 @@ const ENTRY_2RH1 = {
 
 test('the query names the entry in uppercase, as RCSB keys it', () => {
   expect(pdbEntryQuery('1tup')).toContain('entry(entry_id: "1TUP")')
+})
+
+test('a quote in an id stays inside the string literal', () => {
+  expect(pdbEntryQuery('1t") { x } #')).toContain(
+    String.raw`entry(entry_id: "1T\") { X } #")`,
+  )
+  expect(labelChainsQuery('a"b')).toContain(String.raw`entry_id: "A\"B"`)
+  expect(entityAlignmentsQuery('P0"')).toContain(String.raw`queryId: "P0\""`)
 })
 
 test('parses the alignment into 0-based structure positions, one segment per chain', () => {

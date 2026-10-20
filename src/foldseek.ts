@@ -13,6 +13,7 @@ import {
   rawfetch,
   timeout,
 } from './fetchUtils.ts'
+import { isRecord } from './json.ts'
 
 import type { FetchOptions } from './fetchUtils.ts'
 
@@ -144,10 +145,6 @@ export function foldseekLengthProblem(text: string) {
   return length > FOLDSEEK_MAX_RESIDUES
     ? `Foldseek's 3Di predictor takes at most ${FOLDSEEK_MAX_RESIDUES.toLocaleString('en-US')} residues and this sequence has ${length.toLocaleString('en-US')}. Trim it to the region you want to search.`
     : undefined
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function isAlignmentRows(value: unknown): value is FoldseekAlignment[][] {

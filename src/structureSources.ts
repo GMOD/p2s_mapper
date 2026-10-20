@@ -5,6 +5,7 @@
 // its own; take the entry id from here and ask `fetchPdbEntry` for its
 // residue mapping.
 
+import { finiteNumber, graphqlString, isRecord, strings } from './json.ts'
 import { RCSB_DATA_GRAPHQL_URL, graphqlFetch } from './pdbEntry.ts'
 import { isPdbId } from './structureUrls.ts'
 
@@ -45,7 +46,7 @@ export interface EntityDetails {
 }
 
 export function entityAlignmentsQuery(uniprotId: string) {
-  return `{ alignments(from: UNIPROT, to: PDB_ENTITY, queryId: "${uniprotId}") {
+  return `{ alignments(from: UNIPROT, to: PDB_ENTITY, queryId: ${graphqlString(uniprotId)}) {
   target_alignments {
     target_id
     coverage { query_coverage }
@@ -62,20 +63,6 @@ export const ENTITY_DETAILS_QUERY = `query($ids: [String!]!) { polymer_entities(
 
 // RCSB's cap on ids per batch request
 const DETAILS_BATCH = 1000
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function finiteNumber(value: unknown) {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
-}
-
-function strings(value: unknown) {
-  return Array.isArray(value)
-    ? value.filter((v): v is string => typeof v === 'string')
-    : []
-}
 
 /**
  * PDB entities only: the same list carries RCSB's computed models
