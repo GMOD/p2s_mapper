@@ -5,14 +5,35 @@ Lines up a protein sequence with its 3D structure, residue by residue.
 - **Input:** a protein sequence, and an AlphaFold or PDB structure
 - **Output:** which 3D residue each amino acid is, and back
 
-Functionality
+![One residue mapped from the genome to the structure and back](docs/img/mapping.svg)
 
-- Picks the right chain and flags a poor match
-- Finds structures for a gene
+The figure is the
+[genome example](#from-a-genome-position-to-a-residue-and-back) below, drawn by
+running it through the package:
+
+- g2p_mapper turns genome position 2000 into transcript position 20
+- `chooseMappedEntity` aligns the transcript to the chain, which puts transcript
+  position 20 at structure position 10
+- Mol\* selects that residue as `label_seq_id` 11 and the user sees residue 22,
+  so one residue has three numbers with no fixed offset between them
+- The GSH tag maps to nothing, and the mismatched M still maps
+
+**Mapping**
+
+- Picks the chain that matches the protein, and flags a poor match
+- Converts a position between the transcript, the structure, Mol\* and the
+  author numbering
 - Places UniProt annotations on a PDB entry
+
+**Finding structures**
+
+- Finds AlphaFold and PDB structures for a gene, through UniProt
 - Searches Foldseek for structures like a sequence, with the residue pairs of
   each hit
 - Looks a UniProt entry name up, and an author chain's `label_asym_id`
+
+**Scope**
+
 - Works alongside [g2p_mapper](https://github.com/GMOD/g2p_mapper) to map genome
   position ↔ protein sequence ↔ 3D residue
 - No React, JBrowse or Mol\* dependency
@@ -214,10 +235,6 @@ const mapping = chooseUniProtMappingForEntity(mappings, {
 const toStructure = makeUniProtPositionMap(mapping?.segments ?? [])
 toStructure(248) // 154: UniProt residue 248 is structure position 154
 ```
-
-## Graphical overview
-
-![From a gene on the genome to a residue in 3D, and back](docs/img/pipeline.svg)
 
 ## Docs
 

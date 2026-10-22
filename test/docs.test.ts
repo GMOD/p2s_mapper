@@ -5,6 +5,10 @@ import ts from 'typescript'
 import { expect, test } from 'vitest'
 
 import { renderApiDoc } from '../scripts/api-doc.ts'
+import {
+  MAPPING_FIGURE,
+  renderMappingFigure,
+} from '../scripts/mapping-figure.ts'
 
 const root = path.join(import.meta.dirname, '..')
 const indexFile = path.join(root, 'src/index.ts')
@@ -55,6 +59,10 @@ test('api.md signature blocks match the source; pnpm docs:api rewrites them', as
   const current = read('docs/api.md')
   expect(await renderApiDoc(current)).toBe(current)
 }, 60_000)
+
+test('docs/img/mapping.svg matches the package; pnpm docs:figure redraws it', () => {
+  expect(renderMappingFigure()).toBe(fs.readFileSync(MAPPING_FIGURE, 'utf8'))
+})
 
 test('every example that imports the package typechecks', () => {
   const examples = new Map<string, string>()
