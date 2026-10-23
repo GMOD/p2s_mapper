@@ -104,6 +104,28 @@ const LINE = '#8c959f'
 const ORANGE = { stroke: '#bc4c00', fill: '#ffe2c8' }
 const BLUE = { stroke: '#0969da', fill: '#ddf4ff' }
 
+const DARK: Record<string, string> = {
+  '#ffffff': '#0d1117',
+  '#1f2328': '#e6edf3',
+  '#57606a': '#9198a1',
+  '#8c959f': '#656c76',
+  '#6e7781': '#8b949e',
+  '#afb8c1': '#4d555f',
+  '#c4ccd4': '#545d68',
+  '#eef1f4': '#262c36',
+  '#eaeef2': '#21262d',
+  '#f6f8fa': '#151b23',
+  '#bc4c00': '#f0883e',
+  '#ffe2c8': '#3d2414',
+  '#0969da': '#4493f8',
+  '#ddf4ff': '#0f2a47',
+}
+
+const darkStyle = () =>
+  `<style>@media (prefers-color-scheme: dark) {${Object.entries(DARK)
+    .map(([l, d]) => `[fill="${l}"]{fill:${d}}[stroke="${l}"]{stroke:${d}}`)
+    .join('')}}</style>`
+
 const Y = {
   genome: 44,
   transcript: 104,
@@ -362,6 +384,7 @@ export function renderMappingFigure() {
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}" width="${WIDTH}" height="${HEIGHT}" role="img" aria-label="One residue mapped from the genome to the structure and back">`,
+    darkStyle(),
     `<rect width="${WIDTH}" height="${HEIGHT}" fill="#ffffff"/>`,
     ...out,
     '</svg>',

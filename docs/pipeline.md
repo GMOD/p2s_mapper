@@ -1,18 +1,11 @@
 # Pipeline
 
-The chart shows the main path from a gene to a 3D structure. The gene's protein
-and a structure are found separately, the protein is matched to one of the
-structure's chains, and the alignment from that match becomes a lookup in both
-directions. The steps below add three things the chart omits: the choice of
-structure source, the quality check and the optional fusion-partner trim.
+The host app finds the gene's protein and a structure separately, matches the
+protein to one of the structure's chains, and turns the alignment from that
+match into a lookup in both directions. p2s_mapper has no function that runs the
+whole pipeline, so the host calls each step.
 
-![From a gene on the genome to a residue in 3D, and back](img/pipeline.svg)
-
-The chart's source is [`img/pipeline.dot`](img/pipeline.dot); regenerate the SVG
-with `dot -Tsvg docs/img/pipeline.dot -o docs/img/pipeline.svg`.
-
-p2s_mapper has no function that runs the whole pipeline, so the host app calls
-each step.
+![One residue mapped from the genome to the structure and back](img/mapping.svg)
 
 ## Steps
 
