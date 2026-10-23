@@ -5,9 +5,17 @@ Lines up a protein sequence with its 3D structure, residue by residue.
 - **Input:** a protein sequence, and an AlphaFold or PDB structure
 - **Output:** which 3D residue each amino acid is, and back
 
+![TP53 beside PDB 1TUP in jbrowse-plugin-protein3d, with the R248 hotspot selected](https://raw.githubusercontent.com/GMOD/jbrowse-plugin-protein3d/readme-figure/readme.png)
+
+[jbrowse-plugin-protein3d](https://github.com/GMOD/jbrowse-plugin-protein3d)
+uses p2s_mapper to link TP53 on the genome to PDB 1TUP, p53's core domain bound
+to DNA. R248, a cancer hotspot, is selected in magenta on the structure, and its
+codon is marked on the gene.
+[Open this session](https://jbrowse.org/code/jb2/main/?config=test_data/protein3d_config.json&session=spec-%7B%22views%22%3A%5B%7B%22type%22%3A%22ProteinView%22%2C%22structures%22%3A%5B%7B%22pdbId%22%3A%221TUP%22%2C%22initialResidues%22%3A%7B%22start%22%3A248%2C%22end%22%3A248%7D%7D%5D%2C%22transcriptId%22%3A%22NM_000546.6%22%2C%22sideBySide%22%3Atrue%2C%22zoomToBaseLevel%22%3Afalse%2C%22color%22%3A%7B%22field%22%3A%22mappedChain%22%7D%2C%22connectedView%22%3A%7B%22assembly%22%3A%22hg38%22%2C%22loc%22%3A%22chr17%3A7%2C673%2C700-7%2C674%2C700%22%2C%22tracks%22%3A%5B%7B%22trackId%22%3A%22hg38-ncbiRefSeq%22%2C%22geneGlyphMode%22%3A%22longestCoding%22%7D%2C%22clinvar_ncbi_hg38%22%5D%7D%7D%5D%7D).
+
 ![One residue mapped from the genome to the structure and back](docs/img/mapping.svg)
 
-The figure is the
+The diagram is the
 [genome example](#from-a-genome-position-to-a-residue-and-back) below, drawn by
 running it through the package:
 
