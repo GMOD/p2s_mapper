@@ -77,6 +77,8 @@ function runExample() {
     structureRow: structureAlignedSeq(alignment),
     mapper,
     entity,
+    clickedPos,
+    hoveredPos,
     exon2Column: column(g2p[EXONS[1].start]!),
     exon1Columns: [column(0), column(g2p[EXONS[0].end - 3]!)] as const,
     forward: {
@@ -112,7 +114,8 @@ const Y = {
   notes: 286,
 }
 const HEIGHT = Y.notes + 58
-const WIDTH = LEFT + COLUMNS * CELL + 92
+const PANEL = LEFT + COLUMNS * CELL + 110
+const WIDTH = PANEL + 180
 
 const x = (col: number) => LEFT + col * CELL
 const cx = (col: number) => x(col) + CELL / 2
@@ -355,6 +358,8 @@ export function renderMappingFigure() {
     )
   }
 
+  out.push(...structurePanel(ex))
+
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}" width="${WIDTH}" height="${HEIGHT}" role="img" aria-label="One residue mapped from the genome to the structure and back">`,
     `<rect width="${WIDTH}" height="${HEIGHT}" fill="#ffffff"/>`,
@@ -362,6 +367,108 @@ export function renderMappingFigure() {
     '</svg>',
     '',
   ].join('\n')
+}
+
+const HELIX = {
+  radius: 30,
+  rise: 14,
+  width: 11,
+  tilt: 0.35,
+  turn: (100 * Math.PI) / 180,
+  phase: (110 * Math.PI) / 180,
+  last: 18,
+  samples: 8,
+}
+
+function structurePanel(ex: ReturnType<typeof runExample>) {
+  const { entity, mapper } = ex
+  const first = [...Array(HELIX.last).keys()].find(
+    pos => mapper.structureToTranscript(structurePos(pos)) !== undefined,
+  )!
+  const centerX = PANEL + 60
+  const top = Y.transcript - 4
+  const at = (residue: number) => {
+    const angle = (residue - first) * HELIX.turn + HELIX.phase
+    return {
+      x: centerX + HELIX.radius * Math.cos(angle),
+      y:
+        top +
+        (residue - first) * HELIX.rise +
+        HELIX.tilt * HELIX.radius * Math.sin(angle),
+      front: Math.sin(angle) > 0,
+    }
+  }
+  const f = (n: number) => n.toFixed(1)
+
+  const back: string[] = []
+  const front: string[] = []
+  for (let i = 0; i < (HELIX.last - first) * HELIX.samples; i++) {
+    const a = at(first + i / HELIX.samples)
+    const b = at(first + (i + 1) / HELIX.samples)
+    const mid = at(first + (i + 0.5) / HELIX.samples)
+    const w = HELIX.width
+    const face = `M${f(a.x)} ${f(a.y)} L${f(b.x)} ${f(b.y)} L${f(b.x)} ${f(b.y + w)} L${f(a.x)} ${f(a.y + w)} Z`
+    const edge = `M${f(a.x)} ${f(a.y)} L${f(b.x)} ${f(b.y)} M${f(a.x)} ${f(a.y + w)} L${f(b.x)} ${f(b.y + w)}`
+    const [layer, fill, stroke] = mid.front
+      ? [front, '#c4ccd4', '#6e7781']
+      : [back, '#eef1f4', '#afb8c1']
+    layer.push(
+      `<path d="${face}" fill="${fill}" stroke="${fill}" stroke-width="0.6"/>`,
+      `<path d="${edge}" fill="none" stroke="${stroke}" stroke-width="0.9"/>`,
+    )
+  }
+  const start = at(first)
+  const coil = `M${f(start.x)} ${f(start.y + HELIX.width / 2)} C${f(start.x + 14)} ${f(start.y - 10)} ${f(start.x - 10)} ${f(start.y - 22)} ${f(start.x + 6)} ${f(start.y - 40)}`
+
+  const out = [
+    text(PANEL, Y.genome - 16, '3D structure', {
+      size: 12,
+      anchor: 'start',
+      bold: true,
+    }),
+    text(PANEL, Y.genome - 2, 'cartoon, as Mol* draws it', {
+      size: 10,
+      fill: MUTED,
+      anchor: 'start',
+    }),
+    `<path d="${coil}" fill="none" stroke="#afb8c1" stroke-width="4" stroke-linecap="round"/>`,
+    text(start.x + 14, start.y - 34, `${entity.seq.slice(0, first)} tag`, {
+      size: 10,
+      fill: MUTED,
+      anchor: 'start',
+    }),
+    ...back,
+    ...front,
+  ]
+  const end = at(HELIX.last)
+  out.push(
+    text(end.x, end.y + HELIX.width + 18, '⋮', { size: 12, fill: MUTED }),
+  )
+
+  const labelX = centerX + HELIX.radius + 24
+  for (const [pos, color] of [
+    [ex.clickedPos, ORANGE],
+    [ex.hoveredPos, BLUE],
+  ] as const) {
+    const bead = at(pos)
+    const y = bead.y + HELIX.width / 2
+    out.push(
+      `<line x1="${f(bead.x)}" y1="${f(y)}" x2="${labelX - 4}" y2="${f(y)}" stroke="${color.stroke}"/>`,
+      `<circle cx="${f(bead.x)}" cy="${f(y)}" r="8.5" fill="${color.fill}" stroke="${color.stroke}" stroke-width="2"/>`,
+      text(+f(bead.x), +f(y + 3), entity.seq[pos]!, {
+        size: 9,
+        font: MONO,
+        bold: true,
+      }),
+      text(labelX, y + 4, `residue ${residueNumber(entity, pos)}`, {
+        size: 10.5,
+        fill: color.stroke,
+        anchor: 'start',
+        bold: true,
+      }),
+    )
+  }
+  return out
 }
 
 if (import.meta.main) {
