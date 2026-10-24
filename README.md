@@ -260,6 +260,7 @@ toStructure(248) // 154: UniProt residue 248 is structure position 154
 
 - https://github.com/GMOD/proteinbrowser
 - https://github.com/GMOD/g2p_mapper
+- https://github.com/GMOD/domains2genome
 - https://github.com/GMOD/jbrowse-plugin-protein3d
 
 ## License
