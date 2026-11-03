@@ -250,7 +250,7 @@ export function extractStructureSequences(
 /** The molstar `label_seq_id` of one 0-based structure position, or
  * undefined for a position the entity lacks or no position at all. */
 export function labelSeqIdAt(
-  entity: Pick<Entity, 'seqIds'>,
+  entity: { seqIds: readonly number[] },
   pos: number | undefined,
 ) {
   return pos === undefined ? undefined : entity.seqIds[pos]

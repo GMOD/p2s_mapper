@@ -905,7 +905,7 @@ residueRuns(entity, { start: 15, end: 17 }) // [{ start: 3, end: 6 }]
 
 ```ts
 function labelSeqIdAt(
-  entity: Pick<Entity, 'seqIds'>,
+  entity: { seqIds: readonly number[] },
   pos: number | undefined,
 ): number | undefined
 
