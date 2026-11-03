@@ -205,19 +205,18 @@ export async function fetchExperimentalStructures(
     ),
   )
   const ids = alignments.map(a => a.entityId)
-  const details = new Map<string, EntityDetails>()
-  for (let i = 0; i < ids.length; i += DETAILS_BATCH) {
-    const batch = parseEntityDetails(
-      await graphqlFetch(
+  const batches = await Promise.all(
+    Array.from({ length: Math.ceil(ids.length / DETAILS_BATCH) }, (_, i) =>
+      graphqlFetch(
         RCSB_DATA_GRAPHQL_URL,
         ENTITY_DETAILS_QUERY,
-        { ids: ids.slice(i, i + DETAILS_BATCH) },
+        { ids: ids.slice(i * DETAILS_BATCH, (i + 1) * DETAILS_BATCH) },
         opts,
       ),
-    )
-    for (const [id, d] of batch) {
-      details.set(id, d)
-    }
-  }
-  return experimentalStructures(alignments, details)
+    ),
+  )
+  return experimentalStructures(
+    alignments,
+    new Map(batches.flatMap(batch => [...parseEntityDetails(batch)])),
+  )
 }

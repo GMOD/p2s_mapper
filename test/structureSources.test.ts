@@ -221,3 +221,46 @@ test('an accession with no entries asks for no details', async () => {
   expect(await fetchExperimentalStructures('A0A024R161', { fetch })).toEqual([])
   expect(fetch).toHaveBeenCalledTimes(1)
 })
+
+test('splits a long entity list into batches sent together', async () => {
+  const targets = Array.from({ length: 1500 }, (_, i) => ({
+    target_id: `${1000 + i}_1`,
+    coverage: { query_coverage: 0.5 },
+    aligned_regions: [{ query_begin: 1, query_end: 10 }],
+  }))
+  const batchSizes: number[] = []
+  let detailsInFlight = 0
+  let maxInFlight = 0
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockImplementation(async (url, init) => {
+      if (url === 'https://sequence-coordinates.rcsb.org/graphql') {
+        return Response.json({
+          data: { alignments: { target_alignments: targets } },
+        })
+      }
+      const ids = [
+        ...(typeof init?.body === 'string' ? init.body : '').matchAll(
+          /"(\d+_1)"/g,
+        ),
+      ].map(m => m[1])
+      batchSizes.push(ids.length)
+      detailsInFlight++
+      maxInFlight = Math.max(maxInFlight, detailsInFlight)
+      await new Promise(resolve => setTimeout(resolve, 0))
+      detailsInFlight--
+      return Response.json({
+        data: {
+          polymer_entities: ids.map(id => ({
+            rcsb_id: id,
+            rcsb_polymer_entity_container_identifiers: { auth_asym_ids: ['A'] },
+            entry: { rcsb_entry_info: { experimental_method: 'X-ray' } },
+          })),
+        },
+      })
+    })
+  const found = await fetchExperimentalStructures('P00698', { fetch })
+  expect(batchSizes).toEqual([1000, 500])
+  expect(maxInFlight).toBe(2)
+  expect(found).toHaveLength(1500)
+})

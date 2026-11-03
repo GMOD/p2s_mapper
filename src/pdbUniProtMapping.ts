@@ -173,7 +173,7 @@ function dedupeSegments(segments: UniProtStructureSegment[]) {
 /** 1-based UniProt position -> 0-based structure position, for an AlphaFold
  * model whose sequence is the UniProt sequence. */
 export const identityUniProtPositionMap: MapUniProtPosition = uniprotPos =>
-  uniprotPos - 1
+  Number.isInteger(uniprotPos) && uniprotPos >= 1 ? uniprotPos - 1 : undefined
 
 export function makeUniProtPositionMap(
   segments: UniProtStructureSegment[],

@@ -89,6 +89,15 @@ describe('selectBestTranscript', () => {
     expect(nonMatches.map(r => r.id)).toEqual(['t1', 't0'])
   })
 
+  test('an isoform length does not count its stop codon', () => {
+    const { matches, nonMatches } = classifyIsoforms({
+      isoforms: isoforms('MKVLA*', 'MKV*'),
+      structureSequence: 'MKVLA',
+    })
+    expect(matches.map(r => r.length)).toEqual([5])
+    expect(nonMatches.map(r => r.length)).toEqual([3])
+  })
+
   test('classifyIsoforms reports the ids it could not translate', () => {
     expect(
       classifyIsoforms({ isoforms: isoforms('MKV', undefined) }).noData,

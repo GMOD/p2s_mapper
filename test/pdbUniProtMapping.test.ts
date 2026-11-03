@@ -55,6 +55,8 @@ test('maps p53 uniprot positions onto 1TUP structure positions', () => {
 test('identity map is used for alphafold models', () => {
   expect(identityUniProtPositionMap(1)).toBe(0)
   expect(identityUniProtPositionMap(250)).toBe(249)
+  expect(identityUniProtPositionMap(0)).toBeUndefined()
+  expect(identityUniProtPositionMap(2.5)).toBeUndefined()
 })
 
 test('a segment without a chain matches by entity id', () => {

@@ -198,6 +198,14 @@ test('skips entities too large to align instead of hanging on them', () => {
   expect(sel?.index).toBe(1)
 })
 
+test('an exact match too large for the DP still maps, since it needs no DP', () => {
+  const long = 'ACDEFGHIKLMNPQRSTVWY'.repeat(400)
+  const sel = chooseMappedEntity(long, [`${long}*`], 'smith_waterman')
+  expect(sel?.index).toBe(0)
+  expect(sel?.alignment.alns[1].seq).toBe(long)
+  expect(sel?.matches).toBe(long.length)
+})
+
 // The alignment's transcript row has to stay in the same coordinate space as
 // g2p, whose protein positions are codon indices — so an interior stop stays in
 // place and only the terminal one is dropped. Stripping all of them used to

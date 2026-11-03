@@ -102,24 +102,30 @@ export interface FoldseekQuery {
 }
 
 const STANDARD = /[ACDEFGHIKLMNPQRSTVWY]/
+const RESIDUE = /[A-Z*]/
 
 /**
- * The query Foldseek can take from a possibly gapped sequence. A residue the
- * 3Di predictor cannot read, such as X, U or B, is left out, so a hit's
- * positions need `residueOf` to get back to the input's own numbering.
+ * The query Foldseek can take from a possibly gapped sequence, FASTA or plain.
+ * Every letter or stop is a residue of the input; gaps, whitespace and header
+ * lines are not. A residue the 3Di predictor cannot read, such as X, U or B,
+ * is left out, so a hit's positions need `residueOf` to get back to the
+ * input's own numbering.
  */
 export function foldseekQuery(sequence: string): FoldseekQuery {
   let residue = 0
   let kept = ''
   const residueOf: number[] = []
-  for (const letter of sequence.toUpperCase()) {
-    if (letter === '-' || letter === '.') {
-      continue
-    }
-    residue++
-    if (STANDARD.test(letter)) {
-      kept += letter
-      residueOf.push(residue)
+  const body = sequence
+    .split('\n')
+    .filter(line => !line.startsWith('>'))
+    .join('')
+  for (const letter of body.toUpperCase()) {
+    if (RESIDUE.test(letter)) {
+      residue++
+      if (STANDARD.test(letter)) {
+        kept += letter
+        residueOf.push(residue)
+      }
     }
   }
   return { sequence: kept, residueOf }
@@ -131,12 +137,7 @@ export function foldseekQuery(sequence: string): FoldseekQuery {
  * counts these, not the raw characters.
  */
 export function cleanFoldseekSequence(text: string) {
-  return text
-    .split('\n')
-    .filter(line => !line.startsWith('>'))
-    .join('')
-    .toUpperCase()
-    .replaceAll(/[^ACDEFGHIKLMNPQRSTVWY]/g, '')
+  return foldseekQuery(text).sequence
 }
 
 /** why a sequence cannot be searched, or undefined if it can */
@@ -203,6 +204,9 @@ export function parseFoldseekResult(body: unknown): FoldseekHit[] {
   return foldseekHits(parseFoldseekResponse(body))
 }
 
+const spansPositions = (row: string, start: number, end: number) =>
+  row.replaceAll('-', '').length === end - start + 1
+
 /**
  * The residue pairs of a hit, as `[residue of the input, position in the
  * target]`, both 1-based. Undefined when the hit carries no alignment, or when
@@ -218,18 +222,18 @@ export function foldseekHitPairs(
   hit: FoldseekAlignment,
   query: FoldseekQuery,
 ): [number, number][] | undefined {
-  const { qAln, dbAln, qStartPos, qEndPos, dbStartPos } = hit
+  const { qAln, dbAln, qStartPos, qEndPos, dbStartPos, dbEndPos } = hit
   if (
     qAln === undefined ||
     dbAln === undefined ||
     qStartPos === undefined ||
     qEndPos === undefined ||
-    dbStartPos === undefined
+    dbStartPos === undefined ||
+    dbEndPos === undefined ||
+    qAln.length !== dbAln.length ||
+    !spansPositions(qAln, qStartPos, qEndPos) ||
+    !spansPositions(dbAln, dbStartPos, dbEndPos)
   ) {
-    return undefined
-  }
-  const aligned = qAln.replaceAll('-', '').length
-  if (aligned !== qEndPos - qStartPos + 1) {
     return undefined
   }
   const pairs: [number, number][] = []

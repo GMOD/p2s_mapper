@@ -13,6 +13,7 @@ export interface Isoform {
 
 export interface RankedIsoform {
   id: string
+  /** residues of the translation, terminal stop codon not counted */
   length: number
   /** identical residues against the structure, for an isoform that does not
    * match it exactly; undefined with no structure to compare to */
@@ -77,14 +78,17 @@ export function classifyIsoforms({
   for (const { id, seq } of isoforms) {
     if (seq === undefined) {
       noData.push(id)
-    } else if (structure && stripStopCodon(seq) === structure) {
-      matches.push({ id, length: seq.length })
     } else {
-      nonMatches.push({
-        id,
-        length: seq.length,
-        ...(structure ? alignToStructure(seq, structure) : {}),
-      })
+      const protein = stripStopCodon(seq)
+      if (structure && protein === structure) {
+        matches.push({ id, length: protein.length })
+      } else {
+        nonMatches.push({
+          id,
+          length: protein.length,
+          ...(structure ? alignToStructure(protein, structure) : {}),
+        })
+      }
     }
   }
   const byLengthDesc = (a: RankedIsoform, b: RankedIsoform) =>

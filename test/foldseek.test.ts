@@ -42,6 +42,13 @@ describe('foldseekQuery', () => {
   it('upper-cases a lower-case sequence', () => {
     expect(foldseekQuery('mka').sequence).toBe('MKA')
   })
+
+  it('numbers FASTA by its residues, not its header or line breaks', () => {
+    expect(foldseekQuery('>sp|P69905 HBA 1\nMV LS\r\nP*AD\n')).toEqual({
+      sequence: 'MVLSPAD',
+      residueOf: [1, 2, 3, 4, 5, 7, 8],
+    })
+  })
 })
 
 describe('foldseekHitPairs', () => {
@@ -74,6 +81,12 @@ describe('foldseekHitPairs', () => {
   it('refuses a hit whose alignment disagrees with its own positions', () => {
     expect(
       foldseekHitPairs(hit({ qEndPos: 9 }), foldseekQuery('ACDE')),
+    ).toBeUndefined()
+    expect(
+      foldseekHitPairs(hit({ dbEndPos: 9 }), foldseekQuery('ACDE')),
+    ).toBeUndefined()
+    expect(
+      foldseekHitPairs(hit({ dbAln: 'ACDE' }), foldseekQuery('ACDE')),
     ).toBeUndefined()
   })
 })

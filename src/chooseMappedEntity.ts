@@ -93,22 +93,22 @@ export function alignTranscriptToEntity(
 ): ScoredAlignment | undefined {
   const t = stripStopCodon(transcript)
   const s = stripStopCodon(entitySeq)
-  if (!t || !s || alignmentTooLarge(t.length, s.length)) {
-    return undefined
-  }
-  if (s === t) {
+  if (t && s === t) {
     return {
       alignment: {
         consensus: '|'.repeat(t.length),
         alns: [
-          { id: 'seq1', seq: t },
-          { id: 'seq2', seq: s },
+          { id: 'a', seq: t },
+          { id: 'b', seq: s },
         ],
       },
       matches: t.length,
       explained: explainedFraction(t.length, t.length, s.length),
       score: selfScore(t),
     }
+  }
+  if (!t || !s || alignmentTooLarge(t.length, s.length)) {
+    return undefined
   }
   const { alignment, score } = scoredAlignment(t, s, algorithm)
   const matches = alignmentQuality(alignment).identical

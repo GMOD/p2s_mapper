@@ -1011,6 +1011,7 @@ interface Isoform {
 
 interface RankedIsoform {
   id: string
+  /** residues of the translation, terminal stop codon not counted */
   length: number
   /** identical residues against the structure, for an isoform that does not
    * match it exactly; undefined with no structure to compare to */
