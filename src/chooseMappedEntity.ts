@@ -3,25 +3,11 @@ import {
   scoredAlignment,
   selfScore,
 } from './pairwiseAlignment.ts'
-import { stripStopCodon } from './stripStopCodon.ts'
+import { sameProtein, stripStopCodon } from './stripStopCodon.ts'
 import { alignmentQuality } from './alignmentQuality.ts'
 
 import type { PairwiseAlignment } from './mappings.ts'
 import type { AlignmentAlgorithm } from './types.ts'
-
-/**
- * Whether a structure interaction (hover/click) should drive genome navigation.
- * Only the transcript's mapped entity may — a hover on any other chain carries
- * that chain's own label_seq_id and would mis-map through the wrong alignment.
- * A structure with no resolved mapping (`mappedEntityId` undefined, e.g. a
- * standalone viewer with no transcript) stays fully interactive.
- */
-export function interactionMatchesMappedEntity(
-  entityId: string,
-  mappedEntityId: string | undefined,
-): boolean {
-  return mappedEntityId === undefined || entityId === mappedEntityId
-}
 
 export interface EntitySelection extends ScoredAlignment {
   /** index of the chosen entity in the candidate array */
@@ -80,11 +66,30 @@ export function explainedFraction(
   )
 }
 
+function exactAlignment(protein: string): ScoredAlignment {
+  return {
+    alignment: {
+      consensus: '|'.repeat(protein.length),
+      alns: [
+        { id: 'a', seq: protein },
+        { id: 'b', seq: protein },
+      ],
+    },
+    matches: protein.length,
+    explained: explainedFraction(
+      protein.length,
+      protein.length,
+      protein.length,
+    ),
+    score: selfScore(protein),
+  }
+}
+
 /**
  * Align one transcript to one entity, stop codons stripped on both sides. An
- * exact match skips the DP entirely; an oversized pair returns undefined rather
- * than locking up the tab. Used both to score every entity of a structure and
- * to honour a user's explicit chain choice.
+ * exact match skips the DP entirely, however long; an oversized pair otherwise
+ * returns undefined rather than locking up the tab. Used both to score every
+ * entity of a structure and to honour a user's explicit chain choice.
  */
 export function alignTranscriptToEntity(
   transcript: string,
@@ -93,19 +98,8 @@ export function alignTranscriptToEntity(
 ): ScoredAlignment | undefined {
   const t = stripStopCodon(transcript)
   const s = stripStopCodon(entitySeq)
-  if (t && s === t) {
-    return {
-      alignment: {
-        consensus: '|'.repeat(t.length),
-        alns: [
-          { id: 'a', seq: t },
-          { id: 'b', seq: s },
-        ],
-      },
-      matches: t.length,
-      explained: explainedFraction(t.length, t.length, s.length),
-      score: selfScore(t),
-    }
+  if (sameProtein(t, s)) {
+    return exactAlignment(t)
   }
   if (!t || !s || alignmentTooLarge(t.length, s.length)) {
     return undefined
@@ -148,15 +142,10 @@ export function chooseMappedEntity(
       : { ...e, seq: stripStopCodon(e.seq) },
   )
   const exactIndex = candidates.findIndex(
-    c => !c.nucleicAcid && c.seq.length > 0 && c.seq === t,
+    c => !c.nucleicAcid && sameProtein(t, c.seq),
   )
   if (exactIndex !== -1) {
-    const exact = alignTranscriptToEntity(
-      t,
-      candidates[exactIndex]!.seq,
-      algorithm,
-    )!
-    return { index: exactIndex, ...exact }
+    return { index: exactIndex, ...exactAlignment(t) }
   }
 
   // Each alignment is an O(len(t) * len(s)) main-thread DP, so a complex with

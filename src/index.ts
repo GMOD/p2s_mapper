@@ -4,11 +4,14 @@ export * from './mappings.ts'
 export * from './pairwiseAlignment.ts'
 export * from './alignmentQuality.ts'
 export * from './sharedStretches.ts'
+export * from './entityAlignedTo.ts'
 
 // Coordinates
 export * from './coordinates.ts'
 export * from './invertMap.ts'
 export * from './stripStopCodon.ts'
+export * from './residueRuns.ts'
+export * from './genomeSpans.ts'
 
 // Chain choice
 export * from './chooseMappedEntity.ts'

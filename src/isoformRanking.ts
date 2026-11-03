@@ -31,24 +31,9 @@ export interface ClassifiedIsoforms {
   noData: string[]
 }
 
-// The picker re-ranks on every render and each non-exact isoform costs an
-// O(len²) alignment, so results are cached by sequence pair: a titin-sized
-// isoform against a long chain is a second of main-thread work each time.
-const alignmentCache = new Map<string, { identical: number; score: number }>()
-const ALIGNMENT_CACHE_LIMIT = 200
-
 function alignToStructure(isoform: string, structure: string) {
-  const key = `${isoform}\n${structure}`
-  let result = alignmentCache.get(key)
-  if (result === undefined) {
-    const scored = alignTranscriptToEntity(isoform, structure, 'smith_waterman')
-    result = { identical: scored?.matches ?? 0, score: scored?.score ?? 0 }
-    if (alignmentCache.size >= ALIGNMENT_CACHE_LIMIT) {
-      alignmentCache.clear()
-    }
-    alignmentCache.set(key, result)
-  }
-  return result
+  const scored = alignTranscriptToEntity(isoform, structure, 'smith_waterman')
+  return { identical: scored?.matches ?? 0, score: scored?.score ?? 0 }
 }
 
 /**
@@ -61,6 +46,10 @@ function alignToStructure(isoform: string, structure: string) {
  * aligns every structure residue too, across a gap, so it ties on identical
  * residues with the isoform the structure was made from (1MH1 against Rac1
  * and Rac1b).
+ *
+ * Each isoform that does not match exactly costs an O(len²) alignment, a
+ * second of work for a titin-sized one, so a UI keeps the result rather than
+ * ranking again on every render.
  */
 export function classifyIsoforms({
   isoforms,

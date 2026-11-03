@@ -75,8 +75,8 @@ falling back to entity 0. A fallback to entity 0 would mis-map every
 heteromeric, protein-DNA and processed-peptide structure, with no error.
 
 A hover or click event has the `label_seq_id` of the chain under the pointer, so
-`interactionMatchesMappedEntity` lets only the mapped entity move the genome
-view.
+only a hover on the mapped entity should move the genome view: convert it
+through that entity's `makeLabelSeqIdIndex` and ignore every other chain.
 
 ## What if the structure differs from my transcript?
 

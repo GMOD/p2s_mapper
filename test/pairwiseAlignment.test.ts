@@ -5,14 +5,8 @@ import {
   alignmentTooLarge,
   alignSequences,
   needlemanWunsch,
-  runLocalAlignment,
   smithWaterman,
 } from '../src/index.ts'
-
-test('runLocalAlignment is a deprecated alias of alignSequences', () => {
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
-  expect(runLocalAlignment).toBe(alignSequences)
-})
 
 test('needlemanWunsch - identical sequences', () => {
   const result = needlemanWunsch('ACGT', 'ACGT')

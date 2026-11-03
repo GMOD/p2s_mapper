@@ -421,6 +421,3 @@ export function alignSequences(
 ): PairwiseAlignment {
   return scoredAlignment(transcript, structure, algorithm).alignment
 }
-
-/** @deprecated renamed to `alignSequences`, which runs either algorithm */
-export const runLocalAlignment = alignSequences

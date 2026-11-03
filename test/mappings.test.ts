@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 
 import {
+  isPairwiseAlignment,
   pairwiseAlignmentSequenceProblem,
   structurePositionToAlignmentMap,
   structureSeqVsTranscriptSeqMap,
@@ -180,4 +181,18 @@ test('structurePositionToAlignmentMap - range mapping for feature highlight', ()
 
   expect(alignmentStart).toBe(2)
   expect(alignmentEnd).toBe(9)
+})
+
+test('isPairwiseAlignment checks the shape of untrusted data', () => {
+  const rows = [
+    { id: 'a', seq: 'MK' },
+    { id: 'b', seq: 'MK' },
+  ]
+  expect(isPairwiseAlignment({ consensus: '||', alns: rows })).toBe(true)
+  expect(isPairwiseAlignment({ consensus: '||', alns: [rows[0]] })).toBe(false)
+  expect(isPairwiseAlignment({ alns: rows })).toBe(false)
+  expect(
+    isPairwiseAlignment({ consensus: '', alns: [rows[0], { id: 'b' }] }),
+  ).toBe(false)
+  expect(isPairwiseAlignment('MK')).toBe(false)
 })

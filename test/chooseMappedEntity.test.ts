@@ -21,7 +21,6 @@ import {
   alignTranscriptToEntity,
   chooseMappedEntity,
   explainedFraction,
-  interactionMatchesMappedEntity,
   structureSeqVsTranscriptSeqMap,
 } from '../src/index.ts'
 
@@ -220,13 +219,4 @@ test('an interior stop codon keeps transcript coordinates aligned with g2p', () 
   // structure residue 4 is 'W', which is codon 5 of the transcript, not codon 4
   expect(structureSeqToTranscriptSeqPosition[4]).toBe(5)
   expect(structureSeqToTranscriptSeqPosition[7]).toBe(8)
-})
-
-test('interactionMatchesMappedEntity: only the mapped entity drives navigation', () => {
-  // hovering the mapped entity → allowed
-  expect(interactionMatchesMappedEntity('2', '2')).toBe(true)
-  // hovering a different chain (e.g. the partner) → rejected
-  expect(interactionMatchesMappedEntity('1', '2')).toBe(false)
-  // no mapping resolved (standalone structure) → everything interactive
-  expect(interactionMatchesMappedEntity('1', undefined)).toBe(true)
 })

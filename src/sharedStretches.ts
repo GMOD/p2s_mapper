@@ -14,6 +14,7 @@
 // residues at exon junctions, where the gap fits either side.
 
 import {
+  mappedStructureIdentity,
   structureAlignedSeq,
   transcriptAlignedSeq,
   unmapStructurePositions,
@@ -106,4 +107,25 @@ export function keepSharedStretches(pa: PairwiseAlignment) {
     }
   }
   return unmapStructurePositions(pa, unshared)
+}
+
+// Two isoforms of one protein differ only in their alternative exons, so the
+// shared-stretch rule keeps most of their alignment: 92% for PKM1 on PKM2, 94%
+// for FGFR2 IIIc on IIIb. A homolog differs everywhere, and the rule shreds
+// it: mouse TP53 keeps 41%, HBB 28%, BRCA1 9%.
+export const ISOFORM_KEPT_FRACTION = 0.8
+
+/**
+ * The alignment of a transcript to a sequence that may be another isoform of
+ * its protein. Where `keepSharedStretches` keeps at least
+ * `ISOFORM_KEPT_FRACTION` of the mapped residues the two are isoforms, and
+ * only the shared stretches map; below it the sequence is another protein,
+ * and the alignment maps it column for column.
+ */
+export function isoformAlignment(pa: PairwiseAlignment) {
+  const kept = keepSharedStretches(pa)
+  return mappedStructureIdentity(kept).size >=
+    ISOFORM_KEPT_FRACTION * mappedStructureIdentity(pa).size
+    ? kept
+    : pa
 }

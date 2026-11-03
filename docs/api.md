@@ -42,17 +42,10 @@ scoredAlignment('MKVLA', 'MKILA', 'smith_waterman').score // 21
 smithWaterman('HEAGAWGHEE', 'PAWHEAE').alignedSeq1 // '-HEAGAWGHE--E'
 ```
 
-<!-- GENERATED: alignSequences runLocalAlignment scoredAlignment smithWaterman needlemanWunsch AlignmentResult selfScore alignmentTooLarge MAX_ALIGNMENT_CELLS -->
+<!-- GENERATED: alignSequences scoredAlignment smithWaterman needlemanWunsch AlignmentResult selfScore alignmentTooLarge MAX_ALIGNMENT_CELLS -->
 
 ```ts
 function alignSequences(
-  transcript: string,
-  structure: string,
-  algorithm: AlignmentAlgorithm,
-): PairwiseAlignment
-
-/** @deprecated renamed to `alignSequences`, which runs either algorithm */
-function runLocalAlignment(
   transcript: string,
   structure: string,
   algorithm: AlignmentAlgorithm,
@@ -96,8 +89,7 @@ const MAX_ALIGNMENT_CELLS: 40000000
 - The Smith-Waterman and Needleman-Wunsch aligners score with BLOSUM62 and
   affine gaps: open -10, extend -0.5, the EMBOSS defaults.
 - `alignSequences` puts the transcript in row 0 and the structure in row 1, in
-  the order you pass them. `runLocalAlignment` is its old name, kept as a
-  deprecated alias.
+  the order you pass them.
 - Each row contains its whole sequence, with the residues outside
   Smith-Waterman's local alignment placed at the ends, opposite gaps, as the
   `smithWaterman` line above shows. Every coordinate map therefore works on a
@@ -177,7 +169,7 @@ pairwiseAlignmentSequenceProblem(imported, 'MKVLA', 'MKILA')
 // "The first sequence is not this transcript's translation (6 vs 5 residues)"
 ```
 
-<!-- GENERATED: PairwiseAlignment AlignmentRow transcriptAlignedSeq structureAlignedSeq alignmentLength pairwiseAlignmentProblem pairwiseAlignmentSequenceProblem -->
+<!-- GENERATED: PairwiseAlignment AlignmentRow transcriptAlignedSeq structureAlignedSeq alignmentLength pairwiseAlignmentProblem pairwiseAlignmentSequenceProblem isPairwiseAlignment -->
 
 ```ts
 interface PairwiseAlignment {
@@ -203,6 +195,8 @@ function pairwiseAlignmentSequenceProblem(
   transcript: string,
   structure: string,
 ): string | undefined
+
+function isPairwiseAlignment(value: unknown): value is PairwiseAlignment
 ```
 
 <!-- /GENERATED -->
@@ -212,7 +206,49 @@ Run both checks on an alignment from outside the package.
 `pairwiseAlignmentSequenceProblem` rejects rows that are not the transcript and
 chain being mapped, such as an alignment made against another isoform, which
 would shift every position after the first difference. Each returns a message to
-show, or `undefined`.
+show, or `undefined`. `isPairwiseAlignment` checks the shape of untrusted data,
+such as a launch URL, before either check can run on it.
+
+### Checking a supplied alignment
+
+```ts
+import { entityAlignedTo } from 'p2s_mapper'
+
+const chains = [
+  { entityId: '1', seq: 'GSHMKV', seqIds: [], chains: ['A'] },
+  { entityId: '2', seq: 'MKVLA', seqIds: [], chains: ['B'] },
+]
+const supplied = {
+  consensus: '',
+  alns: [
+    { id: 'transcript', seq: 'MKVLA*' },
+    { id: 'structure', seq: 'MKVLA-' },
+  ],
+} as const
+entityAlignedTo(supplied, 'MKVLA*', chains) // { entityId: '2' }
+```
+
+<!-- GENERATED: entityAlignedTo withoutStopColumns -->
+
+```ts
+function entityAlignedTo(
+  supplied: PairwiseAlignment,
+  transcript: string,
+  entities: readonly Entity[],
+  preferredId?: string,
+): { entityId: string } | { problem: string }
+
+function withoutStopColumns(pa: PairwiseAlignment): PairwiseAlignment
+```
+
+<!-- /GENERATED -->
+
+`entityAlignedTo` names the chain an alignment from outside the package
+describes, or gives the problem to show. Its transcript row has to spell the
+transcript and its structure row one of the chains. `withoutStopColumns` drops
+the trailing columns where a stop codon sits opposite a gap, which an alignment
+made from an unstripped translation ends with; `entityAlignedTo` drops them
+itself.
 
 ### Unmapping residues
 
@@ -268,7 +304,7 @@ shared.get(10) // undefined: Q is opposite the insert's D
 shared.get(11) // 15
 ```
 
-<!-- GENERATED: sharedIsoformResidues sharedResidueMap keepSharedStretches -->
+<!-- GENERATED: sharedIsoformResidues sharedResidueMap keepSharedStretches isoformAlignment ISOFORM_KEPT_FRACTION -->
 
 ```ts
 function sharedIsoformResidues(from: string, to: string): Map<number, number>
@@ -276,6 +312,10 @@ function sharedIsoformResidues(from: string, to: string): Map<number, number>
 function sharedResidueMap(a: string, b: string): Map<number, number>
 
 function keepSharedStretches(pa: PairwiseAlignment): PairwiseAlignment
+
+function isoformAlignment(pa: PairwiseAlignment): PairwiseAlignment
+
+const ISOFORM_KEPT_FRACTION: 0.8
 ```
 
 <!-- /GENERATED -->
@@ -290,6 +330,11 @@ column for column.
 `keepSharedStretches` applies the rule to a transcript aligned to another
 isoform's entry. Don't apply it to a structure, where a mismatch is usually a
 construct's point mutation at the right place in the fold.
+
+`isoformAlignment` decides whether the other sequence is an isoform at all. When
+the rule keeps at least `ISOFORM_KEPT_FRACTION` (80%) of the mapped residues it
+returns the trimmed alignment; otherwise the sequence is another protein, such
+as a homolog, and it returns the alignment unchanged.
 
 ### Quality
 
@@ -315,7 +360,7 @@ describeTranscriptCoverage(q) // '98% identity, 40 of 58 transcript residues cov
 describeCoveredRange(q) // 'covers transcript residues 14–53'
 ```
 
-<!-- GENERATED: alignmentQuality AlignmentQuality isLowSimilarity LOW_IDENTITY_OVER_SHORTER SHORT_ALIGNMENT_RESIDUES SHORT_ALIGNMENT_IDENTITY MIN_IDENTICAL_RESIDUES describeAlignmentQuality describeTranscriptCoverage describeCoveredRange -->
+<!-- GENERATED: alignmentQuality AlignmentQuality isLowSimilarity LOW_IDENTITY_OVER_SHORTER SHORT_ALIGNMENT_RESIDUES SHORT_ALIGNMENT_IDENTITY MIN_IDENTICAL_RESIDUES describeAlignmentQuality describeTranscriptCoverage describeCoveredRange describeCoverage -->
 
 ```ts
 function alignmentQuality(pa: PairwiseAlignment): AlignmentQuality
@@ -355,6 +400,8 @@ function describeAlignmentQuality(q: AlignmentQuality): string
 function describeTranscriptCoverage(q: AlignmentQuality): string
 
 function describeCoveredRange(q: AlignmentQuality): string | undefined
+
+function describeCoverage(q: AlignmentQuality): string
 ```
 
 <!-- /GENERATED -->
@@ -384,7 +431,7 @@ import {
   makeCoordinateMapper,
   structurePos,
   transcriptPos,
-  transcriptRangeToStructureRange,
+  transcriptRuns,
 } from 'p2s_mapper'
 
 const transcript = 'MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDP'
@@ -397,11 +444,11 @@ mapper.structureToTranscript(structurePos(0)) // undefined: the GSH tag
 mapper.transcriptToAlignment(transcriptPos(16)) // 19
 
 // a UniProt-style feature, residues 17-30 inclusive
-transcriptRangeToStructureRange(mapper, { start: 17, end: 30 })
-// { start: 6, end: 20 }
+transcriptRuns(mapper, { start: 17, end: 30 })
+// [{ start: 6, end: 20 }]
 ```
 
-<!-- GENERATED: makeCoordinateMapper CoordinateMapper CoordinateMaps transcriptRangeToStructureRange -->
+<!-- GENERATED: makeCoordinateMapper CoordinateMapper CoordinateMaps -->
 
 ```ts
 function makeCoordinateMapper(
@@ -431,11 +478,6 @@ interface CoordinateMaps {
   alignmentToStructurePosition: Record<number, number>
   alignmentToTranscriptPosition: Record<number, number>
 }
-
-function transcriptRangeToStructureRange(
-  mapper: CoordinateMapper,
-  range: { start: number; end: number },
-): { start: number; end: number } | undefined
 ```
 
 <!-- /GENERATED -->
@@ -444,11 +486,8 @@ function transcriptRangeToStructureRange(
   position the other side lacks: a gap, a tag, an unmodelled loop.
 - `maps` holds the raw tables as plain numbers, for code that iterates a whole
   map, such as highlighting every aligned residue.
-- `transcriptRangeToStructureRange` takes 1-based inclusive transcript residues
-  and returns a 0-based half-open structure range. It skips residues the
-  structure lacks, so for a feature running past a fragment's end, the range
-  ends at the last modelled residue. It returns `undefined` when none of the
-  range aligns.
+- [Residue ranges](#residue-ranges) turns a feature's transcript residues into
+  structure ranges through the mapper.
 
 ### Branded positions
 
@@ -543,7 +582,7 @@ instead where you can. `structureSeqVsTranscriptSeqMap` throws on an alignment
 
 ```ts
 import { genomeToTranscriptSeqMapping } from 'g2p_mapper'
-import { codonGenomeSpan } from 'p2s_mapper'
+import { codingSpans, codonGenomeSpan } from 'p2s_mapper'
 
 const { p2gCodon } = genomeToTranscriptSeqMapping({
   refName: 'chr1',
@@ -557,15 +596,27 @@ const { p2gCodon } = genomeToTranscriptSeqMapping({
 })
 codonGenomeSpan(p2gCodon, 1) // [102, 202]: the codon spans the intron
 codonGenomeSpan(p2gCodon, 9) // undefined
+codingSpans(p2gCodon, [0, 1, 2]) // [[99, 103], [200, 205]]: one per exon
 ```
 
-<!-- GENERATED: codonGenomeSpan -->
+<!-- GENERATED: codonGenomeSpan codingSpans structureCodingSpans -->
 
 ```ts
 function codonGenomeSpan(
   p2gCodon: Record<number, number[]>,
   proteinPos: number,
 ): readonly [number, number] | undefined
+
+function codingSpans(
+  p2gCodon: Record<number, number[]>,
+  transcriptPositions: Iterable<number>,
+): [number, number][]
+
+function structureCodingSpans(
+  p2gCodon: Record<number, number[]>,
+  mapper: CoordinateMapper,
+  ranges: readonly ResidueRange[],
+): [number, number][]
 ```
 
 <!-- /GENERATED -->
@@ -577,18 +628,21 @@ reads the codon's bases with g2p_mapper's `getCodonRanges`.
 ### Stop codons
 
 ```ts
-import { stripAllStopCodons, stripStopCodon } from 'p2s_mapper'
+import { sameProtein, stripAllStopCodons, stripStopCodon } from 'p2s_mapper'
 
 stripStopCodon('MK*V**') // 'MK*V'
 stripAllStopCodons('MK*V**') // 'MKV'
+sameProtein('MKV*', 'MKV') // true: an exact match, which needs no alignment
 ```
 
-<!-- GENERATED: stripStopCodon stripAllStopCodons -->
+<!-- GENERATED: stripStopCodon stripAllStopCodons sameProtein -->
 
 ```ts
 function stripStopCodon(seq: string): string
 
 function stripAllStopCodons(seq: string): string
+
+function sameProtein(a: string, b: string): boolean
 ```
 
 <!-- /GENERATED -->
@@ -620,7 +674,7 @@ picked?.matches // 39
 picked?.explained // 0.8125, i.e. 39 / (43 + 5)
 ```
 
-<!-- GENERATED: chooseMappedEntity EntityCandidate EntitySelection ScoredAlignment alignTranscriptToEntity explainedFraction interactionMatchesMappedEntity -->
+<!-- GENERATED: chooseMappedEntity EntityCandidate EntitySelection ScoredAlignment alignTranscriptToEntity explainedFraction -->
 
 ```ts
 function chooseMappedEntity(
@@ -663,11 +717,6 @@ function explainedFraction(
   transcriptLength: number,
   entityLength: number,
 ): number
-
-function interactionMatchesMappedEntity(
-  entityId: string,
-  mappedEntityId: string | undefined,
-): boolean
 ```
 
 <!-- /GENERATED -->
@@ -690,12 +739,8 @@ stop codons from both sides.
 explains why the score divides by the shorter sequence.
 
 `alignTranscriptToEntity` scores one pair; use it when the user picks the chain.
-It returns `undefined` for a pair over the size cap.
-
-`interactionMatchesMappedEntity` returns whether a hover or click on an entity
-should move the genome view. Only the mapped entity should, because another
-chain's positions would go through the wrong alignment. With no mapped entity,
-every chain stays interactive.
+It returns `undefined` for a pair over the size cap, unless the two are the same
+protein, which needs no DP at any length.
 
 ### Reading a loaded Mol\* model
 
@@ -826,10 +871,11 @@ function fillAuthSeqIds(
 
 ```ts
 import {
+  labelSeqIdAt,
   makeLabelSeqIdIndex,
   rangeToLabelSeqIds,
   residueNumber,
-  residueRangeToPositions,
+  residueRuns,
   toLabelSeqIds,
 } from 'p2s_mapper'
 import type { Entity } from 'p2s_mapper'
@@ -843,6 +889,7 @@ const entity: Entity = {
 }
 
 // structure position -> Mol*
+labelSeqIdAt(entity, 4) // 5
 toLabelSeqIds(entity, [4, 99]) // [5]: unknown positions are dropped
 rangeToLabelSeqIds(entity, { start: 3, end: 6 }) // [4, 5, 6]
 
@@ -851,12 +898,17 @@ makeLabelSeqIdIndex(entity).get(5) // 4
 
 // structure position <-> the number a paper cites
 residueNumber(entity, 4) // 16
-residueRangeToPositions(entity, { start: 15, end: 17 }) // { start: 3, end: 6 }
+residueRuns(entity, { start: 15, end: 17 }) // [{ start: 3, end: 6 }]
 ```
 
-<!-- GENERATED: toLabelSeqIds rangeToLabelSeqIds makeLabelSeqIdIndex residueNumber residueRangeToPositions -->
+<!-- GENERATED: labelSeqIdAt toLabelSeqIds rangeToLabelSeqIds makeLabelSeqIdIndex residueNumber -->
 
 ```ts
+function labelSeqIdAt(
+  entity: Pick<Entity, 'seqIds'>,
+  pos: number | undefined,
+): number | undefined
+
 function toLabelSeqIds(
   entity: Entity | undefined,
   positions: Iterable<number>,
@@ -870,11 +922,6 @@ function rangeToLabelSeqIds(
 function makeLabelSeqIdIndex(entity: Entity | undefined): Map<number, number>
 
 function residueNumber(entity: Entity | undefined, pos: number): number
-
-function residueRangeToPositions(
-  entity: Entity | undefined,
-  range: { start: number; end: number },
-): { start: number; end: number } | undefined
 ```
 
 <!-- /GENERATED -->
@@ -883,8 +930,57 @@ Get Mol\*'s `label_seq_id` from these functions, which read `Entity.seqIds`.
 `label_seq_id` is position + 1 only in a file with `entity_poly_seq` or SEQRES.
 A PDB file without SEQRES uses author numbering, with gaps at unobserved
 residues. [coordinates.md](coordinates.md) has the full rules. `residueNumber`
-and `residueRangeToPositions` are for display and for user input such as "R248";
-don't pass their numbers to a coordinate map.
+and `residueRuns` are for display and for user input such as "R248"; don't pass
+their numbers to a coordinate map.
+
+### Residue ranges
+
+```ts
+import { positionRangeRuns, positionRuns } from 'p2s_mapper'
+
+positionRuns([5, 1, 0, 6, 2]) // [{ start: 0, end: 3 }, { start: 5, end: 7 }]
+positionRangeRuns([
+  { start: 4, end: 8 },
+  { start: 0, end: 5 },
+]) // [{ start: 0, end: 8 }]
+```
+
+<!-- GENERATED: residueRuns transcriptRuns positionRuns positionRangeRuns rangeList ResidueRange ResidueRanges -->
+
+```ts
+function residueRuns(
+  entity: Entity | undefined,
+  ranges: ResidueRanges,
+): ResidueRange[]
+
+function transcriptRuns(
+  mapper: CoordinateMapper,
+  ranges: ResidueRanges,
+): ResidueRange[]
+
+function positionRuns(positions: Iterable<number>): ResidueRange[]
+
+function positionRangeRuns(ranges: ResidueRanges): ResidueRange[]
+
+function rangeList(ranges: ResidueRanges | undefined): readonly ResidueRange[]
+
+interface ResidueRange {
+  start: number
+  end: number
+}
+
+type ResidueRanges = ResidueRange | readonly ResidueRange[]
+```
+
+<!-- /GENERATED -->
+
+- Every function here returns sorted 0-based half-open runs of structure
+  positions, never one enclosing range. A selection that crosses a fusion
+  partner, an inserted tag or an unmodelled residue splits around it, so it
+  never selects the residues in between.
+- `residueRuns` takes inclusive author numbers, and `transcriptRuns` inclusive
+  1-based transcript residues, the numbering of a UniProt feature. Both return
+  `[]` when nothing matches.
 
 ### Per-residue confidence
 
@@ -1258,7 +1354,7 @@ entries[0]
 //   isReviewed: true }
 ```
 
-<!-- GENERATED: searchUniProtEntries searchUniProtByEntryName UniProtEntry UniProtSearchResult buildGeneNameQuery -->
+<!-- GENERATED: searchUniProtEntries searchUniProtByEntryName UniProtEntry UniProtSearchResult buildGeneNameQuery parseUniProtEntry -->
 
 ```ts
 function searchUniProtEntries(
@@ -1296,6 +1392,8 @@ function buildGeneNameQuery(
   organismId?: number,
   scope?: 'organism_id' | 'taxonomy_id',
 ): string
+
+function parseUniProtEntry(result: unknown): UniProtEntry | undefined
 ```
 
 <!-- /GENERATED -->

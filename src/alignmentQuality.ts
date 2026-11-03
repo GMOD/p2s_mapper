@@ -130,3 +130,24 @@ export function describeCoveredRange(q: AlignmentQuality) {
     ? undefined
     : `covers transcript residues ${q.transcriptStart}–${q.transcriptEnd}`
 }
+
+/**
+ * Identity and coverage in one short line, from both sides: which of the
+ * transcript's residues the structure holds, and how much of the structure
+ * the alignment leaves out, said only when it leaves some out.
+ */
+export function describeCoverage(q: AlignmentQuality) {
+  return q.aligned === 0
+    ? 'no residues aligned'
+    : [
+        `${Math.round(q.identity * 100)}% identity`,
+        q.aligned === q.transcriptLength
+          ? 'whole transcript'
+          : `transcript ${q.transcriptStart}–${q.transcriptEnd} (${q.aligned} of ${q.transcriptLength})`,
+        q.aligned < q.structureLength
+          ? `${q.aligned} of ${q.structureLength} structure residues`
+          : undefined,
+      ]
+        .filter(part => part !== undefined)
+        .join(' · ')
+}

@@ -1,4 +1,4 @@
-import { getCodonRanges } from 'g2p_mapper'
+import { isRecord } from './json.ts'
 
 export interface AlignmentRow {
   id: string
@@ -15,6 +15,29 @@ export interface AlignmentRow {
 export interface PairwiseAlignment {
   consensus: string
   alns: readonly [AlignmentRow, AlignmentRow]
+}
+
+function isAlignmentRow(value: unknown): value is AlignmentRow {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.seq === 'string'
+  )
+}
+
+/** Whether untrusted data, such as a launch URL or a saved session, has the
+ * shape of a PairwiseAlignment. Check that its rows fit together with
+ * `pairwiseAlignmentProblem`. */
+export function isPairwiseAlignment(
+  value: unknown,
+): value is PairwiseAlignment {
+  return (
+    isRecord(value) &&
+    typeof value.consensus === 'string' &&
+    Array.isArray(value.alns) &&
+    value.alns.length === 2 &&
+    value.alns.every(isAlignmentRow)
+  )
 }
 
 export const transcriptAlignedSeq = (pa: PairwiseAlignment) => pa.alns[0].seq
@@ -210,18 +233,4 @@ export function transcriptPositionToAlignmentMap(
   pairwiseAlignment: PairwiseAlignment,
 ) {
   return seqPositionToAlignmentMap(transcriptAlignedSeq(pairwiseAlignment))
-}
-
-// Enclosing 0-based half-open [start, end) genome span for a codon. getCodonRanges
-// returns the codon's separate genomic pieces (multiple when it straddles an
-// exon/intron boundary); this collapses them to the outer span for navigation
-// and highlighting. undefined when the protein position isn't mapped.
-export function codonGenomeSpan(
-  p2gCodon: Record<number, number[]>,
-  proteinPos: number,
-): readonly [number, number] | undefined {
-  const ranges = getCodonRanges(p2gCodon, proteinPos)
-  return ranges && ranges.length > 0
-    ? [Math.min(...ranges.map(r => r[0])), Math.max(...ranges.map(r => r[1]))]
-    : undefined
 }

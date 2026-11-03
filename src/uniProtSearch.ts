@@ -1,4 +1,5 @@
 import { jsonfetch } from './fetchUtils.ts'
+import { isRecord } from './json.ts'
 import {
   buildUniProtXrefQuery,
   isRecognizedDatabaseId,
@@ -6,31 +7,6 @@ import {
 } from './dbIds.ts'
 
 import type { FetchOptions } from './fetchUtils.ts'
-
-interface UniProtApiResult {
-  results: {
-    entryType: string
-    primaryAccession: string
-    uniProtkbId?: string
-    genes?: {
-      geneName?: {
-        value: string
-      }
-    }[]
-    organism?: {
-      taxonId: number
-      scientificName?: string
-      commonName?: string
-    }
-    proteinDescription?: {
-      recommendedName?: {
-        fullName?: {
-          value: string
-        }
-      }
-    }
-  }[]
-}
 
 export interface UniProtEntry {
   accession: string
@@ -44,18 +20,43 @@ export interface UniProtEntry {
 const UNIPROT_FIELDS =
   'accession,id,gene_names,organism_name,protein_name,reviewed'
 
-function mapApiResultToEntry(
-  result: UniProtApiResult['results'][0],
-): UniProtEntry {
-  return {
-    accession: result.primaryAccession,
-    id: result.uniProtkbId,
-    geneName: result.genes?.[0]?.geneName?.value,
-    organismName:
-      result.organism?.commonName ?? result.organism?.scientificName,
-    proteinName: result.proteinDescription?.recommendedName?.fullName?.value,
-    isReviewed: result.entryType === 'UniProtKB reviewed (Swiss-Prot)',
-  }
+const text = (value: unknown) => (typeof value === 'string' ? value : undefined)
+
+const field = (value: unknown, key: string) =>
+  isRecord(value) ? value[key] : undefined
+
+/** One entry of UniProt's search answer, or undefined for one without an
+ * accession, as a retired entry is listed. */
+export function parseUniProtEntry(result: unknown): UniProtEntry | undefined {
+  const accession = text(field(result, 'primaryAccession'))
+  const genes = field(result, 'genes')
+  const organism = field(result, 'organism')
+  return accession
+    ? {
+        accession,
+        id: text(field(result, 'uniProtkbId')),
+        geneName: text(
+          field(
+            field(Array.isArray(genes) ? genes[0] : undefined, 'geneName'),
+            'value',
+          ),
+        ),
+        organismName:
+          text(field(organism, 'commonName')) ??
+          text(field(organism, 'scientificName')),
+        proteinName: text(
+          field(
+            field(
+              field(field(result, 'proteinDescription'), 'recommendedName'),
+              'fullName',
+            ),
+            'value',
+          ),
+        ),
+        isReviewed:
+          field(result, 'entryType') === 'UniProtKB reviewed (Swiss-Prot)',
+      }
+    : undefined
 }
 
 async function searchUniProt(
@@ -64,8 +65,14 @@ async function searchUniProt(
   opts?: FetchOptions,
 ): Promise<UniProtEntry[]> {
   const url = `https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(query)}&fields=${UNIPROT_FIELDS}&size=${size}`
-  const data = await jsonfetch<UniProtApiResult>(url, opts)
-  return data.results.map(mapApiResultToEntry)
+  const results = field(await jsonfetch(url, opts), 'results')
+  if (!Array.isArray(results)) {
+    throw new Error(`rest.uniprot.org answered ${query} with no results list`)
+  }
+  return results.flatMap(result => {
+    const entry = parseUniProtEntry(result)
+    return entry ? [entry] : []
+  })
 }
 
 /**
@@ -111,9 +118,7 @@ export async function searchUniProtByEntryName(
     5,
     opts,
   )
-  return entries
-    .filter(e => e.accession)
-    .toSorted((a, b) => Number(b.isReviewed) - Number(a.isReviewed))
+  return entries.toSorted((a, b) => Number(b.isReviewed) - Number(a.isReviewed))
 }
 
 interface SearchAttempt {

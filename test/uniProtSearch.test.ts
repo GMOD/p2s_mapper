@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   buildGeneNameQuery,
+  parseUniProtEntry,
   searchUniProtByEntryName,
   searchUniProtEntries,
 } from '../src/index.ts'
@@ -225,5 +226,55 @@ describe('searchUniProtByEntryName', () => {
     const calls = stubUniProt(() => ({ ok: true }))
     await searchUniProtByEntryName('HBA_HUMAN OR reviewed:false')
     expect(queryOf(calls[0]!)).toBe('id:HBA_HUMANORreviewedfalse')
+  })
+})
+
+describe('parseUniProtEntry', () => {
+  it('reads every field it shows', () => {
+    expect(
+      parseUniProtEntry({
+        entryType: 'UniProtKB reviewed (Swiss-Prot)',
+        primaryAccession: 'P04637',
+        uniProtkbId: 'P53_HUMAN',
+        genes: [{ geneName: { value: 'TP53' } }],
+        organism: { scientificName: 'Homo sapiens', commonName: 'Human' },
+        proteinDescription: {
+          recommendedName: {
+            fullName: { value: 'Cellular tumor antigen p53' },
+          },
+        },
+      }),
+    ).toEqual({
+      accession: 'P04637',
+      id: 'P53_HUMAN',
+      geneName: 'TP53',
+      organismName: 'Human',
+      proteinName: 'Cellular tumor antigen p53',
+      isReviewed: true,
+    })
+  })
+
+  it('skips an entry with no accession and tolerates malformed fields', () => {
+    expect(parseUniProtEntry({ uniProtkbId: 'GONE_HUMAN' })).toBeUndefined()
+    expect(parseUniProtEntry(null)).toBeUndefined()
+    expect(
+      parseUniProtEntry({ primaryAccession: 'P1', genes: 'TP53', organism: 7 }),
+    ).toEqual({
+      accession: 'P1',
+      id: undefined,
+      geneName: undefined,
+      organismName: undefined,
+      proteinName: undefined,
+      isReviewed: false,
+    })
+  })
+
+  it('reports an answer with no results list as an error, not as no entries', async () => {
+    vi.stubGlobal('fetch', () =>
+      Promise.resolve(Response.json({ messages: ['unavailable'] })),
+    )
+    await expect(searchUniProtByEntryName('P53_HUMAN')).rejects.toThrow(
+      'no results list',
+    )
   })
 })

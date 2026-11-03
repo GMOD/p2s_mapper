@@ -9,7 +9,8 @@ import {
   oneLetterSequence,
   rangeToLabelSeqIds,
   residueNumber,
-  residueRangeToPositions,
+  labelSeqIdAt,
+  residueRuns,
   toLabelSeqIds,
 } from '../src/index.ts'
 
@@ -188,7 +189,7 @@ test('fillAuthSeqIds: nothing observed keeps the label numbering', () => {
   expect(fillAuthSeqIds([1, 2, 3], undefined)).toEqual([1, 2, 3])
 })
 
-test('residueRangeToPositions finds the positions an author range names', () => {
+test('residueRuns finds the positions an author range names', () => {
   const e: Entity = {
     entityId: '1',
     seq: 'SSSVPS',
@@ -196,20 +197,14 @@ test('residueRangeToPositions finds the positions an author range names', () => 
     authSeqIds: [94, 95, 96, 97, 120, 121],
     chains: ['A'],
   }
-  expect(residueRangeToPositions(e, { start: 95, end: 95 })).toEqual({
-    start: 1,
-    end: 2,
-  })
+  expect(residueRuns(e, { start: 95, end: 95 })).toEqual([{ start: 1, end: 2 }])
   // a range spanning the renumbered loop covers the positions on both sides
-  expect(residueRangeToPositions(e, { start: 96, end: 120 })).toEqual({
-    start: 2,
-    end: 5,
-  })
+  expect(residueRuns(e, { start: 96, end: 120 })).toEqual([
+    { start: 2, end: 5 },
+  ])
   // residues the fragment does not hold select nothing
-  expect(residueRangeToPositions(e, { start: 1, end: 10 })).toBeUndefined()
-  expect(
-    residueRangeToPositions(undefined, { start: 1, end: 1 }),
-  ).toBeUndefined()
+  expect(residueRuns(e, { start: 1, end: 10 })).toEqual([])
+  expect(residueRuns(undefined, { start: 1, end: 1 })).toEqual([])
 })
 
 test('residueNumber falls back to label ids, then to position + 1', () => {
@@ -303,4 +298,11 @@ test('duplicate ids (micro-heterogeneity) collapse to the first position', () =>
     chains: ['A'],
   }
   expect(makeLabelSeqIdIndex(e).get(5)).toBe(0)
+})
+
+test('labelSeqIdAt reads one position, and nothing for a missing one', () => {
+  const entity = { seqIds: [94, 95, 97] }
+  expect(labelSeqIdAt(entity, 2)).toBe(97)
+  expect(labelSeqIdAt(entity, 3)).toBeUndefined()
+  expect(labelSeqIdAt(entity, undefined)).toBeUndefined()
 })

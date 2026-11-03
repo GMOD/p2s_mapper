@@ -18,3 +18,13 @@ export function stripStopCodon(seq: string) {
 export function stripAllStopCodons(seq: string) {
   return seq.replaceAll('*', '')
 }
+
+/**
+ * Whether two translations are one protein, terminal stops aside. An exact
+ * match maps every residue to itself and needs no alignment, so this is the
+ * test for skipping the DP.
+ */
+export function sameProtein(a: string, b: string) {
+  const protein = stripStopCodon(a)
+  return protein.length > 0 && protein === stripStopCodon(b)
+}

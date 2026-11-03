@@ -1,7 +1,9 @@
 import { expect, test } from 'vitest'
 
 import {
+  isoformAlignment,
   keepSharedStretches,
+  mappedStructureIdentity,
   alignSequences,
   sharedIsoformResidues,
   structureSeqVsTranscriptSeqMap,
@@ -74,4 +76,24 @@ test('keepSharedStretches: a local alignment of two isoforms unmaps the swapped 
 test('keepSharedStretches: identical isoforms come back unchanged', () => {
   const pa = alignSequences(tp53, tp53, 'smith_waterman')
   expect(keepSharedStretches(pa)).toBe(pa)
+})
+
+const pair = (transcript: string, structure: string) => ({
+  consensus: '',
+  alns: [
+    { id: 'a', seq: transcript },
+    { id: 'b', seq: structure },
+  ] as const,
+})
+
+test('isoformAlignment unmaps an alternative exon of another isoform', () => {
+  const shared = 'ACDEFGHIKLMNPQRSTVWY'
+  const pa = pair(`${shared}WWWWW${shared}`, `${shared}PPPPP${shared}`)
+  const aligned = isoformAlignment(pa)
+  expect(mappedStructureIdentity(aligned).size).toBe(40)
+})
+
+test('isoformAlignment leaves a homolog mapped column for column', () => {
+  const pa = pair('ACDEFGHIKLMNPQRSTVWY', 'ACWEFWHIWLMWPQWSTWWY')
+  expect(isoformAlignment(pa)).toBe(pa)
 })

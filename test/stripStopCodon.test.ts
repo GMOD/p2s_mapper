@@ -1,6 +1,10 @@
 import { expect, test } from 'vitest'
 
-import { stripAllStopCodons, stripStopCodon } from '../src/index.ts'
+import {
+  sameProtein,
+  stripAllStopCodons,
+  stripStopCodon,
+} from '../src/index.ts'
 
 test('drops the terminal stop codon', () => {
   expect(stripStopCodon('MKAA*')).toBe('MKAA')
@@ -20,4 +24,10 @@ test('keeps an interior stop codon so downstream positions do not shift', () => 
 
 test('stripAllStopCodons removes interior stops too, for search queries', () => {
   expect(stripAllStopCodons('MK*AA*')).toBe('MKAA')
+})
+
+test('sameProtein compares translations with their terminal stops aside', () => {
+  expect(sameProtein('MKV*', 'MKV')).toBe(true)
+  expect(sameProtein('MKV', 'MKVA')).toBe(false)
+  expect(sameProtein('*', '')).toBe(false)
 })
