@@ -1,3 +1,27 @@
+## [3.0.0](https://github.com/GMOD/p2s_mapper/compare/v2.4.0...v3.0.0) (2026-11-03)
+
+### Bug Fixes
+
+- Exact matches past the DP limit, isoform lengths, Foldseek residue numbering ([0fda0b9](https://github.com/GMOD/p2s_mapper/commit/0fda0b9576573b493bc404ecf1f90b171f6997c9))
+- LabelSeqIdAt takes a read-only seqIds ([8f77600](https://github.com/GMOD/p2s_mapper/commit/8f776007cec854f7dca5a9163327145b868e5de9))
+
+### Documentation
+
+- Draw the mapping residue by residue, from the package itself ([d31056e](https://github.com/GMOD/p2s_mapper/commit/d31056eafe0c6cc65dd4bfc91faef8cbf77f5014))
+- Show the mapped residues on a 3D cartoon in the mapping figure ([495a068](https://github.com/GMOD/p2s_mapper/commit/495a068b59483da7cf379afb4bb0a007307b57bd))
+- Give the mapping figure dark colours; drop the graphviz pipeline chart ([8689ff4](https://github.com/GMOD/p2s_mapper/commit/8689ff427de4765b54856ba359a2f7e4b593719b))
+- Open the README with the plugin screenshot; point the FAQ at the figure ([10bcb81](https://github.com/GMOD/p2s_mapper/commit/10bcb819b5795c0cb220944df726b917220222a1))
+- Plain black-and-white mapping figure; drop the helix cartoon ([1a31d64](https://github.com/GMOD/p2s_mapper/commit/1a31d64dbd78af864d9058552230fa43872b994e))
+- Link domains2genome in See also ([62ae915](https://github.com/GMOD/p2s_mapper/commit/62ae9150ea961316ab762c7989ed53a8ea27eb82))
+
+### Features
+
+- **BREAKING** Take the protein3d plugin's generic helpers; drop single-range lookups ([b2e424d](https://github.com/GMOD/p2s_mapper/commit/b2e424dfabae331ca0fe2f07e4ea8d5657b1fd20))
+
+### Other Changes
+
+- Bump deps ([002aab4](https://github.com/GMOD/p2s_mapper/commit/002aab433f223f358486631622b8de76cb9dd9f9))
+
 ## [2.4.0](https://github.com/GMOD/p2s_mapper/compare/v2.3.0...v2.4.0) (2026-10-20)
 
 ### Features
