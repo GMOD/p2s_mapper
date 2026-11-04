@@ -1,3 +1,9 @@
+## [3.1.0](https://github.com/GMOD/p2s_mapper/compare/v3.0.0...v3.1.0) (2026-11-04)
+
+### Features
+
+- Locate one residue in the structure's, transcript's and genome's numberings ([f876d29](https://github.com/GMOD/p2s_mapper/commit/f876d29099390d6a7aa62a86be27a53cac7ada2f))
+
 ## [3.0.0](https://github.com/GMOD/p2s_mapper/compare/v2.4.0...v3.0.0) (2026-11-03)
 
 ### Bug Fixes
