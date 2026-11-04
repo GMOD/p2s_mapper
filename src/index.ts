@@ -12,6 +12,7 @@ export * from './invertMap.ts'
 export * from './stripStopCodon.ts'
 export * from './residueRuns.ts'
 export * from './genomeSpans.ts'
+export * from './residueLocation.ts'
 
 // Chain choice
 export * from './chooseMappedEntity.ts'

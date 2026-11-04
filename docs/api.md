@@ -625,6 +625,121 @@ function structureCodingSpans(
 base of a codon, for navigating to or highlighting a residue on the genome. It
 reads the codon's bases with g2p_mapper's `getCodonRanges`.
 
+### One residue in every numbering
+
+```ts
+import { genomeToTranscriptSeqMapping } from 'g2p_mapper'
+import {
+  locateGenomeBase,
+  locateStructureResidue,
+  makeCoordinateMapper,
+} from 'p2s_mapper'
+
+const genome = genomeToTranscriptSeqMapping({
+  refName: 'chr1',
+  start: 99,
+  end: 205,
+  strand: 1,
+  subfeatures: [
+    { refName: 'chr1', start: 99, end: 103, type: 'CDS', phase: 0 },
+    { refName: 'chr1', start: 200, end: 205, type: 'CDS', phase: 2 },
+  ],
+})
+const mapping = {
+  entity: {
+    entityId: '1',
+    seq: 'MKV',
+    seqIds: [1, 2, 3],
+    authSeqIds: [10, 11, 12],
+    chains: ['A'],
+  },
+  mapper: makeCoordinateMapper({
+    consensus: '',
+    alns: [
+      { id: 'transcript', seq: 'MKV' },
+      { id: 'structure', seq: 'MKV' },
+    ],
+  }),
+  transcript: 'MKV',
+  genome,
+}
+locateStructureResidue(mapping, 1)
+// { position: 1, residue: 11, labelSeqId: 2, chains: ['A'],
+//   structureLetter: 'K', transcriptResidue: 2, transcriptLetter: 'K',
+//   codon: { refName: 'chr1', start: 102, end: 202 }, locus: 'chr1:103-202' }
+locateGenomeBase(mapping, 200)?.residue // 11
+```
+
+<!-- GENERATED: locateStructureResidue locateTranscriptResidue locateGenomeBase ResidueMapping ResidueLocation -->
+
+```ts
+function locateStructureResidue(
+  m: ResidueMapping,
+  position: number,
+): ResidueLocation | undefined
+
+function locateTranscriptResidue(
+  m: ResidueMapping,
+  position: number,
+): ResidueLocation | undefined
+
+function locateGenomeBase(
+  m: ResidueMapping,
+  base: number,
+): ResidueLocation | undefined
+
+interface ResidueMapping {
+  /** the structure's mapped entity */
+  entity: Entity | undefined
+  /** the alignment of the transcript to that entity */
+  mapper: CoordinateMapper | undefined
+  /** the transcript's translation */
+  transcript: string
+  /** the transcript's genome mapping, from g2p_mapper's
+   * genomeToTranscriptSeqMapping; absent for a structure with no genome */
+  genome?: {
+    refName: string
+    g2p: Record<number, number>
+    p2gCodon: Record<number, number[]>
+  }
+}
+
+interface ResidueLocation {
+  /** 0-based position in the entity's sequence */
+  position?: number
+  /** the number a paper and Mol*'s hover call it, `auth_seq_id` when the file
+   * carries it; see residueNumber */
+  residue?: number
+  /** Mol*'s `label_seq_id`, how a selection addresses it */
+  labelSeqId?: number
+  /** chains of the entity, all of which hold this residue */
+  chains?: readonly string[]
+  structureLetter?: string
+  /** 1-based residue of the transcript's translation */
+  transcriptResidue?: number
+  transcriptLetter?: string
+  /** the codon's 0-based half-open genome span, outer bounds when an intron
+   * splits it, on the transcript's own refName */
+  codon?: {
+    refName: string
+    start: number
+    end: number
+  }
+  /** the same codon as a 1-based locString */
+  locus?: string
+}
+```
+
+<!-- /GENERATED -->
+
+Each answers one residue in the numberings a structure, a transcript and a
+genome call it by, so a script can ask the mapping a question without walking
+the maps itself. A side the mapping lacks is left out rather than guessed: a
+structure residue the alignment leaves unpaired has no transcript fields, a
+transcript residue the structure lacks has no structure fields. The genome base
+is compared on the transcript's own refName; resolving an assembly's aliases
+first is the caller's job.
+
 ### Stop codons
 
 ```ts
