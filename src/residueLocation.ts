@@ -36,7 +36,7 @@ export interface ResidueLocation {
   residue?: number
   /** Mol*'s `label_seq_id`, how a selection addresses it */
   labelSeqId?: number
-  /** chains of the entity, all of which hold this residue */
+  /** author chain ids of the entity; a chain may leave this residue unobserved */
   chains?: readonly string[]
   structureLetter?: string
   /** 1-based residue of the transcript's translation */
