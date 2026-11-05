@@ -35,12 +35,12 @@ export const MAPPING_FIGURE = path.join(
 const COLUMNS = 29
 const HOVERED_LABEL_SEQ_ID = 15
 
-const EXONS = [
+export const EXONS = [
   { refName: 'chr17', start: 1000, end: 1060, type: 'CDS', phase: 0 },
   { refName: 'chr17', start: 2000, end: 2117, type: 'CDS' },
 ] as const
 
-function runExample() {
+export function runExample() {
   const transcript =
     'MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDP*'
   const { g2p, p2gCodon } = genomeToTranscriptSeqMapping({
@@ -73,6 +73,7 @@ function runExample() {
   const [hoveredStart, hoveredEnd] = codonGenomeSpan(p2gCodon, hovered)!
 
   return {
+    clickedTranscript: clicked,
     transcriptRow: transcriptAlignedSeq(alignment),
     structureRow: structureAlignedSeq(alignment),
     mapper,

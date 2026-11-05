@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="252" viewBox="0 0 1000 252" role="img" aria-label="A gene maps to a full-length protein, only part of which has a 3D structure; p2s_mapper maps that part to the structure" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<defs><marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" fill="#f0f6fc"/></marker></defs>
+<rect width="1000" height="252" fill="#0d1117"/>
+<text x="40" y="30" fill="#a2acb8" font-size="15" text-anchor="start">gene</text>
+<g transform="translate(40,26) scale(0.74) translate(-40,0)">
+<line x1="40" y1="80" x2="290" y2="80" stroke="#8b949e" stroke-width="2"/>
+<rect x="40" y="71" width="22" height="18" rx="5" fill="#8b949e"/>
+<rect x="88" y="71" width="70" height="18" rx="5" fill="#8b949e"/>
+<rect x="184" y="71" width="44" height="18" rx="5" fill="#8b949e"/>
+<rect x="254" y="71" width="36" height="18" rx="5" fill="#8b949e"/>
+<rect x="88" y="65" width="11" height="30" rx="2" fill="#ff8a3d"/>
+</g>
+<text x="88" y="152" fill="#f0f6fc" font-size="16" text-anchor="middle">chr17:2000</text>
+<line x1="256" y1="106" x2="332" y2="106" stroke="#f0f6fc" stroke-width="2" marker-start="url(#head)" marker-end="url(#head)"/>
+<text x="294" y="88" fill="#f0f6fc" font-size="16" text-anchor="middle" font-weight="600">g2p_mapper</text>
+<text x="352" y="30" fill="#a2acb8" font-size="15" text-anchor="start">full-length protein</text>
+<rect x="353" y="97" width="350" height="18" rx="6" fill="none" stroke="#8b949e" stroke-width="2.5" stroke-dasharray="7 5"/>
+<rect x="430" y="92" width="130" height="28" rx="3" fill="#4c9aff"/>
+<rect x="454.4" y="88" width="10" height="36" rx="2" fill="#ff8a3d"/>
+<text x="459.4" y="82" fill="#f0f6fc" font-size="16" text-anchor="middle">protein position 20</text>
+<path d="M430 132 V136 H560 V130" fill="none" stroke="#4c9aff" stroke-width="2.5"/>
+<text x="495" y="156" fill="#79b8ff" font-size="15" text-anchor="middle" font-weight="600">only this part has a structure</text>
+<text x="696" y="134" fill="#a2acb8" font-size="14" text-anchor="end">no structure</text>
+<line x1="718" y1="106" x2="784" y2="106" stroke="#f0f6fc" stroke-width="2" marker-start="url(#head)" marker-end="url(#head)"/>
+<text x="751" y="88" fill="#f0f6fc" font-size="16" text-anchor="middle" font-weight="600">p2s_mapper</text>
+<text x="800" y="30" fill="#a2acb8" font-size="15" text-anchor="start">3D structure</text>
+<g transform="translate(632,-10) scale(0.56)">
+<path d="M300,292 C310,286 318,276 330,262" fill="none" stroke="#6e7681" stroke-width="10" stroke-linecap="round"/>
+<path d="M330,262 C300,230 352,196 382,214 S420,268 450,244 S430,186 466,176 S530,196 512,232 S470,286 520,292 S580,260 560,226" fill="none" stroke="#4c9aff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="371" cy="209" r="11" fill="#ff8a3d"/>
+</g>
+<text x="826" y="176" fill="#f0f6fc" font-size="14" text-anchor="end">lab-added construct</text>
+<text x="900" y="216" fill="#f0f6fc" font-size="16" text-anchor="middle">label_seq_id 11</text>
+<text x="900" y="236" fill="#a2acb8" font-size="14" text-anchor="middle">shown as 22</text>
+</svg>

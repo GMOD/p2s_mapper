@@ -5,18 +5,25 @@ Lines up a protein sequence with its 3D structure, residue by residue.
 - **Input:** a protein sequence, and an AlphaFold or PDB structure
 - **Output:** which 3D residue each amino acid is, and back
 
-![One residue mapped from the genome to the structure and back](docs/img/mapping.svg)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/overview-dark.svg">
+  <img alt="A gene maps to a full-length protein, only part of which has a 3D structure; p2s_mapper maps that part to the structure" src="docs/img/overview-light.svg">
+</picture>
 
-The diagram is the
+A structure rarely holds the whole protein. A PDB entry is usually a fragment,
+often with extra residues the lab added, so a position in the full-length
+protein is not a position in the structure. The diagram is the
 [genome example](#from-a-genome-position-to-a-residue-and-back) below, drawn by
 running it through the package:
 
-- g2p_mapper turns genome position 2000 into transcript position 20
-- `chooseMappedEntity` aligns the transcript to the chain, which puts transcript
-  position 20 at structure position 10
-- Mol\* selects that residue as `label_seq_id` 11 and the user sees residue 22,
-  so one residue has three numbers with no fixed offset between them
-- The GSH tag maps to nothing, and the mismatched M still maps
+- g2p_mapper turns genome position 2000 into protein position 20
+- `chooseMappedEntity` aligns the protein to the structure's chain. Only the
+  aligned part has a structure, and the lab-added GSH maps to nothing
+- Mol\* selects that residue as `label_seq_id` 11 and the user sees residue 22
+
+The [mapping figure](docs/img/mapping.svg) traces the same residue number by
+number, showing that one residue has three numbers with no fixed offset between
+them, and that the mismatched M still maps.
 
 **Mapping**
 

@@ -9,6 +9,10 @@ import {
   MAPPING_FIGURE,
   renderMappingFigure,
 } from '../scripts/mapping-figure.ts'
+import {
+  OVERVIEW_FIGURES,
+  renderOverviewFigure,
+} from '../scripts/overview-figure.ts'
 
 const root = path.join(import.meta.dirname, '..')
 const indexFile = path.join(root, 'src/index.ts')
@@ -63,6 +67,15 @@ test('api.md signature blocks match the source; pnpm docs:api rewrites them', as
 test('docs/img/mapping.svg matches the package; pnpm docs:figure redraws it', () => {
   expect(renderMappingFigure()).toBe(fs.readFileSync(MAPPING_FIGURE, 'utf8'))
 })
+
+test.each(['light', 'dark'] as const)(
+  'docs/img/overview-%s.svg matches the package; pnpm docs:figure redraws it',
+  theme => {
+    expect(renderOverviewFigure(theme)).toBe(
+      fs.readFileSync(OVERVIEW_FIGURES[theme], 'utf8'),
+    )
+  },
+)
 
 test('every example that imports the package typechecks', () => {
   const examples = new Map<string, string>()
