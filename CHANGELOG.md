@@ -1,3 +1,13 @@
+## [3.2.0](https://github.com/GMOD/p2s_mapper/compare/v3.1.0...v3.2.0) (2026-11-05)
+
+### Documentation
+
+- A ResidueLocation's chains may leave the residue unobserved ([59c01bd](https://github.com/GMOD/p2s_mapper/commit/59c01bd385ff45a5a60f98a450be6d26ac110bac))
+
+### Features
+
+- List a protein's AlphaFold DB complexes and read each chain's UniProt entry from the model file ([4a5c4cf](https://github.com/GMOD/p2s_mapper/commit/4a5c4cff97225f24c9068d4a635b208bd45990e4))
+
 ## [3.1.0](https://github.com/GMOD/p2s_mapper/compare/v3.0.0...v3.1.0) (2026-11-04)
 
 ### Features
