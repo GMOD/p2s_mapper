@@ -1,6 +1,5 @@
-// Draws the README's per-example figures in docs/img/: the chain-choice figure
-// runs its example through the package, and the other is a diagram of a call
-// sequence.
+// Draws docs/img/choose-chain.svg, the README's first example, by running it
+// through the package.
 //
 //   pnpm docs:figure
 //
@@ -127,36 +126,8 @@ function renderChooseChainFigure() {
   )
 }
 
-function renderFindStructureFigure() {
-  const W = 200
-  const H = 44
-  const GAP = 44
-  const steps = ['gene name', 'UniProt accession', 'AlphaFold or PDB structure']
-  return svg(
-    32 + steps.length * W + (steps.length - 1) * GAP,
-    H + 32,
-    'A gene name becomes a UniProt accession, then an AlphaFold model or a PDB entry',
-    [
-      `<defs><marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${INK}"/></marker></defs>`,
-      ...steps.flatMap((step, i) => {
-        const sx = 16 + i * (W + GAP)
-        return [
-          box(sx, 16, W, H),
-          text(sx + W / 2, 43, step, { size: 12 }),
-          ...(i > 0
-            ? [
-                `<line x1="${sx - GAP + 4}" y1="${16 + H / 2}" x2="${sx - 4}" y2="${16 + H / 2}" stroke="${INK}" marker-end="url(#head)"/>`,
-              ]
-            : []),
-        ]
-      }),
-    ],
-  )
-}
-
 export const renderUsageFigures = () => ({
   [img('choose-chain.svg')]: renderChooseChainFigure(),
-  [img('find-structure.svg')]: renderFindStructureFigure(),
 })
 
 if (import.meta.main) {

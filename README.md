@@ -172,8 +172,6 @@ rangeToLabelSeqIds(entity, { start: 10, end: 20 })
 From a gene name to a structure file: look the gene up in UniProt, then take its
 AlphaFold model or best PDB entry.
 
-![A gene name becomes a UniProt accession, then an AlphaFold or PDB structure](docs/img/find-structure.svg)
-
 ```ts
 import {
   fetchAlphaFoldModels,
