@@ -73,7 +73,10 @@ export function runExample() {
   const [hoveredStart, hoveredEnd] = codonGenomeSpan(p2gCodon, hovered)!
 
   return {
-    clickedTranscript: clicked,
+    exonResidues: EXONS.map(exon => {
+      const first = g2p[exon.start]!
+      return [first, first + (exon.end - exon.start) / 3 - 1] as const
+    }),
     transcriptRow: transcriptAlignedSeq(alignment),
     structureRow: structureAlignedSeq(alignment),
     mapper,

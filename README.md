@@ -5,25 +5,27 @@ Lines up a protein sequence with its 3D structure, residue by residue.
 - **Input:** a protein sequence, and an AlphaFold or PDB structure
 - **Output:** which 3D residue each amino acid is, and back
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/overview-dark.svg">
-  <img alt="A gene maps to a full-length protein, only part of which has a 3D structure; p2s_mapper maps that part to the structure" src="docs/img/overview-light.svg">
-</picture>
+![A gene's coding exons map to a full-length protein, only part of which has a 3D structure; p2s_mapper maps that part to the structure's chain](docs/img/overview.svg)
 
 An experimental structure rarely holds the whole protein. A PDB entry is usually
-a fragment, often with extra residues the lab added, so a position in the
-full-length protein is not a position in the structure. The diagram follows the
-[genome example](#from-a-genome-position-to-a-residue-and-back) below, with its
-numbers taken from running it through the package:
+a fragment, often with extra residues the lab added (a tag or linker the gene
+does not encode), so the structure's chain is not the full-length protein and a
+position in one is not a position in the other. The mapping has to go around
+those differences. In the diagram, blue is the stretch the structure covers,
+traced from the gene's coding exons through the protein to the 3D chain, and
+orange is what the lab added:
 
-- g2p_mapper turns genome position 2000 into protein position 20
-- `chooseMappedEntity` aligns the protein to the structure's chain. Only the
-  aligned part has a structure, and the lab-added GSH maps to nothing
-- Mol\* selects that residue as `label_seq_id` 11 and the user sees residue 22
+- g2p_mapper converts between genome and protein positions
+- `chooseMappedEntity` aligns the protein to the structure's chain, and
+  p2s_mapper converts between protein and structure positions. The lab-added GSH
+  is not encoded by the gene, so it maps to nothing
 
-The [mapping figure](docs/img/mapping.svg) traces the same residue number by
-number, showing that one residue has three numbers with no fixed offset between
-them, and that the mismatched M still maps.
+The [mapping figure](docs/img/mapping.svg) follows one residue of the
+[genome example](#from-a-genome-position-to-a-residue-and-back) below, drawn by
+running it through the package. Genome position 2000 is protein position 20,
+which Mol\* selects as `label_seq_id` 11 and the user sees as residue 22: one
+residue has three numbers with no fixed offset between them, and the mismatched
+M still maps.
 
 **Mapping**
 

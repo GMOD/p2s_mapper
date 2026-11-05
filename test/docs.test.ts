@@ -10,7 +10,7 @@ import {
   renderMappingFigure,
 } from '../scripts/mapping-figure.ts'
 import {
-  OVERVIEW_FIGURES,
+  OVERVIEW_FIGURE,
   renderOverviewFigure,
 } from '../scripts/overview-figure.ts'
 
@@ -68,14 +68,9 @@ test('docs/img/mapping.svg matches the package; pnpm docs:figure redraws it', ()
   expect(renderMappingFigure()).toBe(fs.readFileSync(MAPPING_FIGURE, 'utf8'))
 })
 
-test.each(['light', 'dark'] as const)(
-  'docs/img/overview-%s.svg matches the package; pnpm docs:figure redraws it',
-  theme => {
-    expect(renderOverviewFigure(theme)).toBe(
-      fs.readFileSync(OVERVIEW_FIGURES[theme], 'utf8'),
-    )
-  },
-)
+test('docs/img/overview.svg matches the package; pnpm docs:figure redraws it', () => {
+  expect(renderOverviewFigure()).toBe(fs.readFileSync(OVERVIEW_FIGURE, 'utf8'))
+})
 
 test('every example that imports the package typechecks', () => {
   const examples = new Map<string, string>()

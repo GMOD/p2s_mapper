@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="212" viewBox="0 0 1000 212" role="img" aria-label="A gene's coding exons map to a full-length protein, only part of which has a 3D structure; p2s_mapper maps that part to the structure's chain" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<defs><marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" fill="#1f2328"/></marker></defs>
+<rect width="1000" height="212" fill="#ffffff"/>
+<text x="30" y="34" fill="#4b5563" font-size="15" text-anchor="start">gene</text>
+<line x1="30" y1="100" x2="265" y2="100" stroke="#6e7781" stroke-width="2"/>
+<rect x="30" y="96" width="16" height="8" rx="2" fill="#8c959f"/>
+<rect x="249" y="96" width="16" height="8" rx="2" fill="#8c959f"/>
+<clipPath id="exon0"><rect x="50" y="91" width="56.610169491525426" height="18" rx="5"/></clipPath>
+<rect x="50" y="91" width="56.610169491525426" height="18" rx="5" fill="#b6d4fe"/>
+<rect x="86.79661016949153" y="91" width="19.813559322033896" height="18" fill="#0b5fff" clip-path="url(#exon0)"/>
+<clipPath id="exon1"><rect x="134.61016949152543" y="91" width="110.38983050847457" height="18" rx="5"/></clipPath>
+<rect x="134.61016949152543" y="91" width="110.38983050847457" height="18" rx="5" fill="#b6d4fe"/>
+<rect x="134.61016949152543" y="91" width="93.40677966101694" height="18" fill="#0b5fff" clip-path="url(#exon1)"/>
+<text x="38" y="134" fill="#4b5563" font-size="13" text-anchor="middle">UTR</text>
+<text x="257" y="134" fill="#4b5563" font-size="13" text-anchor="middle">UTR</text>
+<text x="147.5" y="134" fill="#4b5563" font-size="13" text-anchor="middle">CDS</text>
+<line x1="276" y1="100" x2="384" y2="100" stroke="#1f2328" stroke-width="2" marker-start="url(#head)" marker-end="url(#head)"/>
+<text x="330" y="82" fill="#1f2328" font-size="16" text-anchor="middle" font-weight="600">g2p_mapper</text>
+<text x="330" y="124" fill="#4b5563" font-size="13" text-anchor="middle">genome position</text>
+<text x="330" y="141" fill="#4b5563" font-size="13" text-anchor="middle">↔ protein position</text>
+<text x="395" y="34" fill="#4b5563" font-size="15" text-anchor="start">full-length protein</text>
+<rect x="395" y="91" width="270" height="18" rx="6" fill="#b6d4fe"/>
+<rect x="462" y="86" width="116" height="28" rx="3" fill="#0b5fff"/>
+<path d="M462 126 V130 H578 V124" fill="none" stroke="#0b5fff" stroke-width="2.5"/>
+<text x="520" y="152" fill="#0a4fd6" font-size="15" text-anchor="middle" font-weight="600">only this part has a structure</text>
+<text x="659" y="128" fill="#4b5563" font-size="14" text-anchor="end">no structure</text>
+<line x1="678" y1="100" x2="792" y2="100" stroke="#1f2328" stroke-width="2" marker-start="url(#head)" marker-end="url(#head)"/>
+<text x="735" y="82" fill="#1f2328" font-size="16" text-anchor="middle" font-weight="600">p2s_mapper</text>
+<text x="735" y="124" fill="#4b5563" font-size="13" text-anchor="middle">protein position</text>
+<text x="735" y="141" fill="#4b5563" font-size="13" text-anchor="middle">↔ structure residue</text>
+<text x="842" y="34" fill="#4b5563" font-size="15" text-anchor="start">3D structure</text>
+<g transform="translate(676,-17) scale(0.5)">
+<path d="M244,344 C282,326 306,290 330,262" fill="none" stroke="#f25c05" stroke-width="14" stroke-linecap="round"/>
+<path d="M330,262 C300,230 352,196 382,214 S420,268 450,244 S430,186 466,176 S530,196 512,232 S470,286 520,292 S580,260 560,226" fill="none" stroke="#0b5fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="796" y="180" fill="#c2410c" font-size="14" text-anchor="end" font-weight="600">lab-added residues</text>
+<text x="796" y="198" fill="#c2410c" font-size="13" text-anchor="end">not encoded by the gene, so unmapped</text>
+</svg>
