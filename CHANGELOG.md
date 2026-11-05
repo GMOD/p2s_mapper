@@ -1,3 +1,9 @@
+## [3.3.0](https://github.com/GMOD/p2s_mapper/compare/v3.2.0...v3.3.0) (2026-11-05)
+
+### Features
+
+- Describe a list of PDB entries in one request: title, partner chains and ligands ([0eb41b8](https://github.com/GMOD/p2s_mapper/commit/0eb41b8f4d75e04fb46c93cd0960b1ce51315781))
+
 ## [3.2.0](https://github.com/GMOD/p2s_mapper/compare/v3.1.0...v3.2.0) (2026-11-05)
 
 ### Documentation
