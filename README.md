@@ -10,11 +10,11 @@ Lines up a protein sequence with its 3D structure, residue by residue.
   <img alt="A gene maps to a full-length protein, only part of which has a 3D structure; p2s_mapper maps that part to the structure" src="docs/img/overview-light.svg">
 </picture>
 
-A structure rarely holds the whole protein. A PDB entry is usually a fragment,
-often with extra residues the lab added, so a position in the full-length
-protein is not a position in the structure. The diagram is the
-[genome example](#from-a-genome-position-to-a-residue-and-back) below, drawn by
-running it through the package:
+An experimental structure rarely holds the whole protein. A PDB entry is usually
+a fragment, often with extra residues the lab added, so a position in the
+full-length protein is not a position in the structure. The diagram follows the
+[genome example](#from-a-genome-position-to-a-residue-and-back) below, with its
+numbers taken from running it through the package:
 
 - g2p_mapper turns genome position 2000 into protein position 20
 - `chooseMappedEntity` aligns the protein to the structure's chain. Only the
@@ -41,7 +41,7 @@ them, and that the mismatched M still maps.
   chains and bound ligands
 - Searches Foldseek for structures like a sequence, with the residue pairs of
   each hit
-- Looks a UniProt entry name up, and an author chain's `label_asym_id`
+- Looks up a UniProt entry by name, and the `label_asym_id` of an author chain
 
 **Scope**
 
@@ -76,7 +76,8 @@ import {
   transcriptPos,
 } from 'p2s_mapper'
 
-// p53's N-terminus, and a structure holding a DNA strand and a tagged fragment
+// the first 58 residues of p53 plus a stop, and a structure holding a DNA strand
+// and a tagged fragment
 const transcript = 'MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDP*'
 const chains = [
   { seq: 'TTTCCTAGACTTGCCCAATTA', nucleicAcid: true },
@@ -99,8 +100,9 @@ if (picked) {
 }
 ```
 
-Every position is 0-based. Structure and transcript positions are separate
-types, so passing one where the other belongs is a compile error.
+Every position the mapper takes or returns is 0-based. Structure and transcript
+positions are separate types, so passing one where the other belongs is a
+compile error.
 
 ### From a genome position to a residue, and back
 
