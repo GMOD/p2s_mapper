@@ -1829,6 +1829,91 @@ We timed the alternatives for TP53 on 2026-10-11. RCSB's two calls took 1.3 s,
 HBB. For BRCA1, RCSB and PDBe each listed 33 structures and 3D-Beacons listed
 none.
 
+### What each entry shows (RCSB)
+
+```ts
+import {
+  fetchExperimentalStructures,
+  fetchPdbEntrySummaries,
+  pdbEntryPartners,
+} from 'p2s_mapper'
+
+const structures = await fetchExperimentalStructures('P01111')
+const summaries = await fetchPdbEntrySummaries(structures.map(s => s.pdbId))
+const shoc2 = summaries.get('9btm')
+shoc2?.title // 'NRas 1-169 Q61R in Complex with Shoc2 80-582'
+shoc2?.ligands // [{ id: 'GTP', name: "GUANOSINE-5'-TRIPHOSPHATE" }, { id: 'MG', … }]
+const partners = shoc2 && pdbEntryPartners(shoc2, 'P01111')
+// [{ entityId: '9BTM_1', description: 'Leucine-rich repeat protein SHOC-2',
+//    type: 'Protein', uniprotIds: ['Q9UQ13'], chains: ['B'] }]
+```
+
+<!-- GENERATED: fetchPdbEntrySummaries parsePdbEntrySummaries PdbEntrySummary PdbPolymerEntity PdbLigand pdbEntryPartners PDB_ENTRY_SUMMARIES_QUERY -->
+
+```ts
+function fetchPdbEntrySummaries(
+  pdbIds: readonly string[],
+  opts?: FetchOptions,
+): Promise<Map<string, PdbEntrySummary>>
+
+function parsePdbEntrySummaries(data: unknown): Map<string, PdbEntrySummary>
+
+interface PdbEntrySummary {
+  /** lower case, as `fetchExperimentalStructures` lists it */
+  pdbId: string
+  /** the entry's title, as deposited: often all capitals */
+  title?: string
+  polymers: PdbPolymerEntity[]
+  /** each component once, in RCSB's order */
+  ligands: PdbLigand[]
+}
+
+interface PdbPolymerEntity {
+  /** RCSB's id, "9BTM_1" */
+  entityId: string
+  /** the depositors' name for it, "Leucine-rich repeat protein SHOC-2" */
+  description?: string
+  /** RCSB's polymer type: 'Protein', 'DNA', 'RNA', 'NA-hybrid' or 'Other' */
+  type?: string
+  /** UniProt entries SIFTS maps it to; none for a synthetic peptide, an
+   * antibody or a nucleic acid */
+  uniprotIds: string[]
+  /** author chain ids */
+  chains: string[]
+}
+
+interface PdbLigand {
+  /** chemical component id, "GDP" */
+  id: string
+  /** its full name, "GUANOSINE-5'-DIPHOSPHATE" */
+  name?: string
+}
+
+function pdbEntryPartners(
+  summary: PdbEntrySummary,
+  uniprotId: string,
+): PdbPolymerEntity[]
+
+const PDB_ENTRY_SUMMARIES_QUERY: 'query($ids: [String!]!) { entries(entry_ids: $ids) {\n  rcsb_id\n  struct { title }\n  polymer_entities {\n    rcsb_id\n    rcsb_polymer_entity { pdbx_description }\n    entity_poly { rcsb_entity_polymer_type }\n    rcsb_polymer_entity_container_identifiers { uniprot_ids auth_asym_ids }\n  }\n  nonpolymer_entities { nonpolymer_comp { chem_comp { id name } } }\n} }'
+```
+
+<!-- /GENERATED -->
+
+`fetchPdbEntrySummaries` reads what a list of entries shows before any is
+opened: each entry's title, every polymer with its type, chains and the UniProt
+entries SIFTS maps it to, and each bound small molecule once. It asks RCSB's
+data API for the whole list in one request (several sent together past 300
+entries), where `fetchPdbEntry` would take one per entry; all 36 of NRAS's took
+one request of about 0.2 s on 2026-11-05. An id RCSB does not know is left out
+of the map rather than failing the rest.
+
+`pdbEntryPartners` names the polymers that are not the protein: those SIFTS does
+not map to the accession's entry. A partner protein, a synthetic peptide, an
+antibody and a DNA strand all count, so filter on `type` for proteins alone. The
+title is the depositors' and often all capitals, and the ligands include
+whatever the crystal was grown in (glycerol, sulfate, citrate); both are left as
+RCSB has them for the caller to present.
+
 ## URLs and formats
 
 ### Structure URLs

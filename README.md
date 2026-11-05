@@ -30,6 +30,8 @@ running it through the package:
 - Finds AlphaFold and PDB structures for a gene, through UniProt
 - Lists the complexes AlphaFold DB predicted with a protein, homomers and
   partners, and names the protein of each chain
+- Describes a list of PDB entries in one request: each one's title, partner
+  chains and bound ligands
 - Searches Foldseek for structures like a sequence, with the residue pairs of
   each hit
 - Looks a UniProt entry name up, and an author chain's `label_asym_id`
