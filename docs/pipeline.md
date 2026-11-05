@@ -5,8 +5,6 @@ protein to one of the structure's chains, and turns the alignment from that
 match into a lookup in both directions. p2s_mapper has no function that runs the
 whole pipeline, so the host calls each step.
 
-![One residue mapped from the genome to the structure and back](img/mapping.svg)
-
 ## Steps
 
 **Gene side**

@@ -3,8 +3,6 @@
 A residue can have up to four numbers, and mixing them up causes off-by-one
 errors. The package's position types catch most of those at compile time.
 
-![One residue's transcript, structure, label_seq_id and auth_seq_id numbers](img/mapping.svg)
-
 ## Positions
 
 **Every coordinate the package stores or computes is a 0-based position**: an

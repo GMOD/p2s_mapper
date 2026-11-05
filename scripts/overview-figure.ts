@@ -1,6 +1,6 @@
 // Draws docs/img/overview.svg, the README's hero figure: a structure holds only
 // part of the protein, and p2s_mapper connects the two. Which stretch of each
-// coding exon the structure covers comes from the same example as mapping.svg,
+// coding exon the structure covers comes from the shared example in figure-example.ts,
 // run through the package.
 //
 //   pnpm docs:figure
@@ -11,7 +11,7 @@ import path from 'node:path'
 
 import { structurePos } from '../src/index.ts'
 
-import { EXONS, runExample } from './mapping-figure.ts'
+import { EXONS, runExample } from './figure-example.ts'
 
 export const OVERVIEW_FIGURE = path.join(
   import.meta.dirname,

@@ -5,10 +5,7 @@ import ts from 'typescript'
 import { expect, test } from 'vitest'
 
 import { renderApiDoc } from '../scripts/api-doc.ts'
-import {
-  MAPPING_FIGURE,
-  renderMappingFigure,
-} from '../scripts/mapping-figure.ts'
+import { renderUsageFigures } from '../scripts/usage-figures.ts'
 import {
   OVERVIEW_FIGURE,
   renderOverviewFigure,
@@ -64,12 +61,14 @@ test('api.md signature blocks match the source; pnpm docs:api rewrites them', as
   expect(await renderApiDoc(current)).toBe(current)
 }, 60_000)
 
-test('docs/img/mapping.svg matches the package; pnpm docs:figure redraws it', () => {
-  expect(renderMappingFigure()).toBe(fs.readFileSync(MAPPING_FIGURE, 'utf8'))
-})
-
 test('docs/img/overview.svg matches the package; pnpm docs:figure redraws it', () => {
   expect(renderOverviewFigure()).toBe(fs.readFileSync(OVERVIEW_FIGURE, 'utf8'))
+})
+
+test('the per-example figures match the package; pnpm docs:figure redraws them', () => {
+  for (const [file, content] of Object.entries(renderUsageFigures())) {
+    expect(content).toBe(fs.readFileSync(file, 'utf8'))
+  }
 })
 
 test('every example that imports the package typechecks', () => {

@@ -81,9 +81,9 @@ through that entity's `makeLabelSeqIdIndex` and ignore every other chain.
 ## What if the structure differs from my transcript?
 
 A structure often differs from the transcript by substitutions, tags, deletions
-and loops the crystal does not resolve. The [mapping figure](img/mapping.svg)
-shows a tag, transcript residues the construct lacks, and a mismatch that still
-maps, all in one chain.
+and loops the crystal does not resolve. The
+[chain-choice figure](img/choose-chain.svg) shows a tag, transcript residues the
+construct lacks, and a mismatch that still maps, all in one chain.
 
 - **Substitutions** map position to position and show as mismatches in
   `mappedStructureIdentity`.
@@ -102,8 +102,8 @@ Papers cite the depositors' `auth_seq_id`, and Mol\* selects residues by
 `label_seq_id`. The package keeps both and never converts between them by adding
 an offset, because the offset varies: in 1TUP, position 154 is residue 248, and
 haemoglobin's author residue 1 is UniProt residue 2. `Entity.authSeqIds` is
-display-only. The [mapping figure](img/mapping.svg) traces one residue through
-structure position 10, `label_seq_id` 11 and author number 22. See
+display-only. In the README's genome example, one residue is structure position
+10, `label_seq_id` 11 and author number 22. See
 [coordinates.md](coordinates.md).
 
 For UniProt numbering, `makeUniProtPositionMap` uses the entry's own UniProt
@@ -124,7 +124,8 @@ Local alignment is most likely to go wrong on a fusion protein.
   the alignment.
 
 A tag the transcript lacks aligns to a gap, so its residues map to nothing with
-no special handling, like the GSH tag in the [mapping figure](img/mapping.svg).
+no special handling, like the GSH tag in the
+[chain-choice figure](img/choose-chain.svg).
 
 ## What if I pass an alignment from elsewhere?
 
