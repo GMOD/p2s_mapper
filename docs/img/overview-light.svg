@@ -25,11 +25,11 @@
 <text x="751" y="88" fill="#1f2328" font-size="16" text-anchor="middle" font-weight="600">p2s_mapper</text>
 <text x="800" y="30" fill="#4b5563" font-size="15" text-anchor="start">3D structure</text>
 <g transform="translate(632,-10) scale(0.56)">
-<path d="M300,292 C310,286 318,276 330,262" fill="none" stroke="#8c959f" stroke-width="10" stroke-linecap="round"/>
+<path d="M240,338 C282,322 306,290 330,262" fill="none" stroke="#8c959f" stroke-width="13" stroke-linecap="round"/>
 <path d="M330,262 C300,230 352,196 382,214 S420,268 450,244 S430,186 466,176 S530,196 512,232 S470,286 520,292 S580,260 560,226" fill="none" stroke="#0b5fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="371" cy="209" r="11" fill="#f25c05"/>
 </g>
-<text x="826" y="176" fill="#1f2328" font-size="14" text-anchor="end">lab-added construct</text>
+<text x="760" y="184" fill="#1f2328" font-size="14" text-anchor="end">lab-added construct</text>
 <text x="900" y="216" fill="#1f2328" font-size="16" text-anchor="middle">label_seq_id 11</text>
 <text x="900" y="236" fill="#4b5563" font-size="14" text-anchor="middle">shown as 22</text>
 </svg>

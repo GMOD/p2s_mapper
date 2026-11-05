@@ -156,11 +156,11 @@ function structure(p: Palette, labelSeqId: string, shown: string) {
   return [
     text(800, 30, p.muted, 15, '3D structure', { anchor: 'start' }),
     '<g transform="translate(632,-10) scale(0.56)">',
-    `<path d="M300,292 C310,286 318,276 330,262" fill="none" stroke="${p.stub}" stroke-width="10" stroke-linecap="round"/>`,
+    `<path d="M240,338 C282,322 306,290 330,262" fill="none" stroke="${p.stub}" stroke-width="13" stroke-linecap="round"/>`,
     `<path d="M330,262 C300,230 352,196 382,214 S420,268 450,244 S430,186 466,176 S530,196 512,232 S470,286 520,292 S580,260 560,226" fill="none" stroke="${p.covered}" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>`,
     `<circle cx="371" cy="209" r="11" fill="${p.accent}"/>`,
     '</g>',
-    text(826, 176, p.ink, 14, 'lab-added construct', { anchor: 'end' }),
+    text(760, 184, p.ink, 14, 'lab-added construct', { anchor: 'end' }),
     text(900, 216, p.ink, 16, labelSeqId),
     text(900, 236, p.muted, 14, shown),
   ]
