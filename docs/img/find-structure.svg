@@ -1,24 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 786 232" width="786" height="232" role="img" aria-label="A gene name becomes a UniProt accession, then either an AlphaFold model or a PDB entry">
-<rect width="786" height="232" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 76" width="720" height="76" role="img" aria-label="A gene name becomes a UniProt accession, then an AlphaFold model or a PDB entry">
+<rect width="720" height="76" fill="#ffffff"/>
 <defs><marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#000000"/></marker></defs>
-<rect x="16" y="76" width="230" height="56" fill="#ffffff" stroke="#000000"/>
-<text x="131" y="100" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#000000" text-anchor="middle" font-weight="bold">searchUniProtEntries</text>
-<text x="131" y="118" font-family="Helvetica,Arial,sans-serif" font-size="10" fill="#666666" text-anchor="middle">gene name → accession P04637</text>
-<rect x="286" y="16" width="230" height="56" fill="#ffffff" stroke="#000000"/>
-<text x="401" y="40" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#000000" text-anchor="middle" font-weight="bold">fetchAlphaFoldModels</text>
-<text x="401" y="58" font-family="Helvetica,Arial,sans-serif" font-size="10" fill="#666666" text-anchor="middle">every model of the accession</text>
-<rect x="556" y="16" width="230" height="56" fill="#ffffff" stroke="#000000"/>
-<text x="671" y="40" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#000000" text-anchor="middle" font-weight="bold">pickAlphaFoldModel</text>
-<text x="671" y="58" font-family="Helvetica,Arial,sans-serif" font-size="10" fill="#666666" text-anchor="middle">the one for your translation</text>
-<rect x="286" y="136" width="230" height="56" fill="#ffffff" stroke="#000000"/>
-<text x="401" y="160" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#000000" text-anchor="middle" font-weight="bold">fetchExperimentalStructures</text>
-<text x="401" y="178" font-family="Helvetica,Arial,sans-serif" font-size="10" fill="#666666" text-anchor="middle">PDB entries, best coverage first</text>
-<rect x="556" y="136" width="230" height="56" fill="#ffffff" stroke="#000000"/>
-<text x="671" y="160" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#000000" text-anchor="middle" font-weight="bold">getPdbStructureUrl</text>
-<text x="671" y="178" font-family="Helvetica,Arial,sans-serif" font-size="10" fill="#666666" text-anchor="middle">the best entry’s file URL</text>
-<line x1="250" y1="104" x2="282" y2="44" stroke="#000000" marker-end="url(#head)"/>
-<line x1="250" y1="104" x2="282" y2="164" stroke="#000000" marker-end="url(#head)"/>
-<line x1="520" y1="44" x2="552" y2="44" stroke="#000000" marker-end="url(#head)"/>
-<line x1="520" y1="164" x2="552" y2="164" stroke="#000000" marker-end="url(#head)"/>
-<text x="286" y="220" font-family="Helvetica,Arial,sans-serif" font-size="11" fill="#666666" text-anchor="start">use the AlphaFold model if there is one, else the best PDB entry</text>
+<rect x="16" y="16" width="200" height="44" fill="#ffffff" stroke="#000000"/>
+<text x="116" y="43" font-family="Helvetica,Arial,sans-serif" font-size="12" fill="#000000" text-anchor="middle">gene name</text>
+<rect x="260" y="16" width="200" height="44" fill="#ffffff" stroke="#000000"/>
+<text x="360" y="43" font-family="Helvetica,Arial,sans-serif" font-size="12" fill="#000000" text-anchor="middle">UniProt accession</text>
+<line x1="220" y1="38" x2="256" y2="38" stroke="#000000" marker-end="url(#head)"/>
+<rect x="504" y="16" width="200" height="44" fill="#ffffff" stroke="#000000"/>
+<text x="604" y="43" font-family="Helvetica,Arial,sans-serif" font-size="12" fill="#000000" text-anchor="middle">AlphaFold or PDB structure</text>
+<line x1="464" y1="38" x2="500" y2="38" stroke="#000000" marker-end="url(#head)"/>
 </svg>
