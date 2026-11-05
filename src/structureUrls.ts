@@ -50,26 +50,30 @@ export function rcsbEntryUrl(pdbId: string) {
  * `data`) always wins, and resolving an already-resolved spec returns the same
  * url.
  *
- * `uniprotId` resolves to no url and still outranks a `pdbId`. AlphaFold DB's
- * files for an accession change (an isoform model, several fragments, a new
- * model version), so the caller keeps the accession and asks
- * `fetchAlphaFoldModels` which file to open.
+ * `uniprotId` and `alphaFoldComplexId` resolve to no url and still outrank a
+ * `pdbId`. AlphaFold DB's files change (an isoform model, several fragments, a
+ * new model version), so the caller keeps the id and asks
+ * `fetchAlphaFoldModels` or `fetchAlphaFoldComplexModel` which file to open.
  */
 export function resolveStructureUrl({
   url,
   data,
   uniprotId,
+  alphaFoldComplexId,
   pdbId,
 }: {
   url?: string
   data?: string
   uniprotId?: string
+  alphaFoldComplexId?: string
   pdbId?: string
 }) {
   if (url !== undefined || data !== undefined) {
     return url
   }
-  return uniprotId !== undefined || pdbId === undefined
+  return uniprotId !== undefined ||
+    alphaFoldComplexId !== undefined ||
+    pdbId === undefined
     ? undefined
     : getPdbStructureUrl(pdbId)
 }
@@ -139,26 +143,50 @@ export function getConfidenceUrlFromTarget(target: string) {
   return undefined
 }
 
+/** Whether a string is an AlphaFold DB complex's model id, AF- and digits
+ * alone. A monomer's id names its accession, AF-P04637-F1. */
+export function isAlphaFoldComplexId(value: string) {
+  return /^AF-\d+$/.test(value)
+}
+
 /**
- * The name to show for a structure: its PDB id, its AlphaFold accession, else
- * the file's name. Use it wherever a structure is named, so each place shows
- * the same name.
+ * The model id of an AlphaFold DB complex's file url, or of the id itself:
+ * `…/AF-0000000066211449-model_v1.cif` gives AF-0000000066211449. Undefined
+ * for anything else, a monomer's file included.
+ */
+export function getAlphaFoldComplexId(target: string) {
+  const file = target.split(/[?#]/, 1)[0]?.split('/').pop() ?? ''
+  return /^(AF-\d+)(?:-model_v\d+\.(?:cif|bcif|pdb)(?:\.gz)?)?$/.exec(file)?.[1]
+}
+
+/**
+ * The name to show for a structure: its PDB id, its AlphaFold accession or
+ * complex id, else the file's name. Use it wherever a structure is named, so
+ * each place shows the same name.
  */
 export function structureDisplayLabel({
   url,
   data,
   uniprotId,
+  alphaFoldComplexId,
 }: {
   url?: string
   data?: string
   uniprotId?: string
+  alphaFoldComplexId?: string
 }) {
   if (url === undefined) {
     return data !== undefined
       ? 'Uploaded structure'
-      : uniprotId
-        ? `AlphaFold ${uniprotId}`
-        : ''
+      : alphaFoldComplexId
+        ? `AlphaFold complex ${alphaFoldComplexId}`
+        : uniprotId
+          ? `AlphaFold ${uniprotId}`
+          : ''
+  }
+  const complexId = getAlphaFoldComplexId(url)
+  if (complexId) {
+    return `AlphaFold complex ${complexId}`
   }
   const pdbId = getPdbIdFromUrl(url)
   if (pdbId) {

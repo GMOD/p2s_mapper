@@ -875,7 +875,7 @@ if (entity) {
 }
 ```
 
-<!-- GENERATED: extractEntities Entity StructureModel Column extractStructureSequences entityLabel oneLetterSequence fillAuthSeqIds -->
+<!-- GENERATED: extractEntities Entity EntityUniProtReference StructureModel Column extractStructureSequences entityLabel oneLetterSequence fillAuthSeqIds -->
 
 ```ts
 function extractEntities(model: StructureModel): Entity[] | undefined
@@ -898,6 +898,18 @@ interface Entity {
    * use `seqIds` to select residues in Mol*. Absent when the model has no
    * atomic hierarchy. See `residueNumber`. */
   authSeqIds?: number[]
+  /** the UniProt entry the file says this entity was predicted from; see
+   * `EntityUniProtReference` */
+  uniProt?: EntityUniProtReference
+}
+
+interface EntityUniProtReference {
+  accession: string
+  /** UniProt entry name, e.g. "GSTP1_HUMAN" */
+  name?: string
+  gene?: string
+  /** 1-based UniProt residue of the entity's first position */
+  start: number
 }
 
 interface StructureModel {
@@ -981,6 +993,10 @@ function fillAuthSeqIds(
 - `fillAuthSeqIds` numbers unobserved residues by the offset of the nearest
   observed one, so the numbering continues through a disordered loop as the
   paper's does.
+- `Entity.uniProt` is the UniProt entry the file names for the entity in
+  ModelCIF's `ma_target_ref_db_details`, which AlphaFold DB writes into every
+  model, a complex's included. It is left out when the stated span is not the
+  entity's length.
 
 ### Residue numbering
 
@@ -1377,7 +1393,7 @@ toStructure(248) // 154: UniProt R248 is structure position 154
 toStructure(50) // undefined: outside the construct
 ```
 
-<!-- GENERATED: chooseUniProtMappingForEntity SegmentEntity makeUniProtPositionMap identityUniProtPositionMap MapUniProtPosition -->
+<!-- GENERATED: chooseUniProtMappingForEntity SegmentEntity entityUniProtMappings makeUniProtPositionMap identityUniProtPositionMap MapUniProtPosition -->
 
 ```ts
 function chooseUniProtMappingForEntity(
@@ -1389,6 +1405,10 @@ interface SegmentEntity {
   entityId: string
   chains: readonly string[]
 }
+
+function entityUniProtMappings(
+  entities: readonly Pick<Entity, 'entityId' | 'seq' | 'uniProt'>[],
+): UniProtStructureMapping[]
 
 function makeUniProtPositionMap(
   segments: UniProtStructureSegment[],
@@ -1407,6 +1427,11 @@ several accessions cover one entity (a chimera), `chooseUniProtMappingForEntity`
 picks the one covering the most residues. For an AlphaFold model, whose sequence
 is the UniProt sequence, use `identityUniProtPositionMap` instead of fetching
 the entry.
+
+`entityUniProtMappings` builds the same mappings from what a model file says of
+its own entities (`Entity.uniProt`), with no request. In an AlphaFold complex it
+names the protein of whichever chain you mapped, so a heterodimer's partner
+chain never takes the transcript's features.
 
 ### Trimming fusion partners
 
@@ -1627,6 +1652,101 @@ version changes. For an accession AlphaFold never folded, it returns `[]`.
 translations, canonical first, so every residue maps to itself. Failing that, it
 takes the canonical model, then the longest isoform model.
 
+### AlphaFold complexes
+
+```ts
+import { fetchAlphaFoldComplexModel, fetchAlphaFoldComplexes } from 'p2s_mapper'
+
+const complexes = await fetchAlphaFoldComplexes('P09211')
+const pair = complexes.find(c => !c.homomer)
+pair?.members // [{ accession: 'P09488', gene: 'GSTM1', copies: 1 }, …]
+pair?.iptm // 0.92: confidence in how the chains sit against each other
+
+const model = pair && (await fetchAlphaFoldComplexModel(pair.entity))
+model?.url // 'https://alphafold.ebi.ac.uk/files/AF-0000000210612662-model_v1.cif'
+model?.chains // [{ chainId: 'A', accession: 'P09488', … }, { chainId: 'B', … }]
+```
+
+<!-- GENERATED: fetchAlphaFoldComplexes parseAlphaFoldComplexes AlphaFoldComplex AlphaFoldComplexMember fetchAlphaFoldComplexModel parseAlphaFoldComplexModel AlphaFoldComplexModel AlphaFoldComplexChain -->
+
+```ts
+function fetchAlphaFoldComplexes(
+  uniprotId: string,
+  opts?: FetchOptions,
+): Promise<AlphaFoldComplex[]>
+
+function parseAlphaFoldComplexes(json: unknown): AlphaFoldComplex[]
+
+interface AlphaFoldComplex {
+  /** AlphaFold DB's id for the model, e.g. AF-0000000066211449 */
+  entity: string
+  /** one protein in several copies, rather than several proteins */
+  homomer: boolean
+  /** "dimer", "trimer", ... */
+  oligomericState?: string
+  /** AlphaFold DB's name, e.g. "Homodimer of Superoxide dismutase" */
+  name?: string
+  members: AlphaFoldComplexMember[]
+  /** mean per-residue confidence (pLDDT), 0-100 */
+  meanPlddt?: number
+  /** interface predicted TM-score, 0-1: how sure the model is of how the
+   * chains sit against each other */
+  iptm?: number
+  ipsae?: number
+  pdockq?: number
+  pdockq2?: number
+  lis?: number
+}
+
+interface AlphaFoldComplexMember {
+  accession: string
+  gene?: string
+  /** UniProt's protein name, e.g. "Glutathione S-transferase P" */
+  description?: string
+  /** how many copies of it the complex holds */
+  copies: number
+}
+
+function fetchAlphaFoldComplexModel(
+  entity: string,
+  opts?: FetchOptions,
+): Promise<AlphaFoldComplexModel | undefined>
+
+function parseAlphaFoldComplexModel(
+  json: unknown,
+): AlphaFoldComplexModel | undefined
+
+interface AlphaFoldComplexModel {
+  entity: string
+  url: string
+  confidenceUrl?: string
+  paeUrl?: string
+  chains: AlphaFoldComplexChain[]
+}
+
+interface AlphaFoldComplexChain {
+  /** author chain id in the model file */
+  chainId: string
+  accession: string
+  gene?: string
+  description?: string
+  sequence: string
+}
+```
+
+<!-- /GENERATED -->
+
+`fetchAlphaFoldComplexes` lists every complex AlphaFold DB predicted with the
+protein in it, homomers and complexes with other proteins alike, from its
+`/api/complex` endpoint. For an accession in no complex it returns `[]`. The
+list names no files, so `fetchAlphaFoldComplexModel` asks the prediction API for
+the one you open; a file name spelled from the id would carry a model version
+that moves. One request per complex opened, rather than per complex listed,
+keeps a protein with twenty partners to one request on the way in.
+
+Don't ask `/api/prediction/<accession>?include_complexes=true` for a monomer:
+its complex rows would read as extra models of the accession.
+
 ### Experimental structures (RCSB)
 
 ```ts
@@ -1736,7 +1856,7 @@ structureDisplayLabel({ url: 'https://files.rcsb.org/download/1tup.cif' }) // '1
 structureDisplayLabel({ uniprotId: 'P04637' }) // 'AlphaFold P04637'
 ```
 
-<!-- GENERATED: getPdbStructureUrl getAlphaFoldStructureUrl resolveStructureUrl getPdbIdFromUrl structureDisplayLabel -->
+<!-- GENERATED: getPdbStructureUrl getAlphaFoldStructureUrl resolveStructureUrl getPdbIdFromUrl getAlphaFoldComplexId isAlphaFoldComplexId structureDisplayLabel -->
 
 ```ts
 function getPdbStructureUrl(pdbId: string): string
@@ -1747,15 +1867,21 @@ function resolveStructureUrl(options: {
   url?: string
   data?: string
   uniprotId?: string
+  alphaFoldComplexId?: string
   pdbId?: string
 }): string | undefined
 
 function getPdbIdFromUrl(url: string): string | undefined
 
+function getAlphaFoldComplexId(target: string): string | undefined
+
+function isAlphaFoldComplexId(value: string): boolean
+
 function structureDisplayLabel(options: {
   url?: string
   data?: string
   uniprotId?: string
+  alphaFoldComplexId?: string
 }): string
 ```
 
@@ -1770,6 +1896,13 @@ function structureDisplayLabel(options: {
 - `getPdbIdFromUrl` recognizes only the PDB archive's own hosts, so the package
   never gives a user's model that happens to be named `1abc.cif` the annotations
   of entry 1ABC.
+- `getAlphaFoldComplexId` reads a complex's model id off its file url
+  (`AF-0000000066211449-model_v1.cif`) or takes the id itself. A complex's file
+  name carries no accession, so `getUniprotIdFromAlphaFoldTarget` gives
+  undefined for it; read the accessions off the loaded file's entities instead
+  (`Entity.uniProt`). `structureDisplayLabel` names such a url
+  `AlphaFold complex AF-0000000066211449`, and `resolveStructureUrl` treats
+  `alphaFoldComplexId` as it treats `uniprotId`.
 
 ### Searching Foldseek
 

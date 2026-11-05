@@ -33,6 +33,25 @@ export interface Entity {
    * use `seqIds` to select residues in Mol*. Absent when the model has no
    * atomic hierarchy. See `residueNumber`. */
   authSeqIds?: number[]
+  /** the UniProt entry the file says this entity was predicted from; see
+   * `EntityUniProtReference` */
+  uniProt?: EntityUniProtReference
+}
+
+/**
+ * The UniProt entry a ModelCIF file names for an entity, in
+ * `ma_target_ref_db_details`. AlphaFold DB writes it into every model, so a
+ * complex's file says which protein each chain is, and an isoform model names
+ * its isoform (P04637-2). Kept only when the stated span is exactly the
+ * entity's length, so position `pos` is UniProt residue `start + pos`.
+ */
+export interface EntityUniProtReference {
+  accession: string
+  /** UniProt entry name, e.g. "GSTP1_HUMAN" */
+  name?: string
+  gene?: string
+  /** 1-based UniProt residue of the entity's first position */
+  start: number
 }
 
 export interface Column<T> {
@@ -161,7 +180,9 @@ function isNucleicAcid(model: StructureModel, entityId: string) {
 }
 
 /** The slice of molstar's MmcifFormat data read here; other formats have no
- * `db` */
+ * `db` or `frame`. `frame` is the parsed file itself, holding every field it
+ * writes, where `db` keeps only those molstar's schema names: its
+ * `ma_target_ref_db_details` has no `gene_name`. */
 interface MmcifSourceData {
   db?: {
     entity_poly?: {
@@ -169,11 +190,58 @@ interface MmcifSourceData {
       pdbx_seq_one_letter_code_can: Column<string>
     }
   }
+  frame?: {
+    categories: Record<
+      string,
+      | {
+          rowCount: number
+          getField(name: string): { str(row: number): string } | undefined
+        }
+      | undefined
+    >
+  }
+}
+
+function mmcifSource(model: StructureModel) {
+  return model.obj?.data.sourceData?.data as MmcifSourceData | undefined
+}
+
+/** Each entity's UniProt reference, with the length of the span it states */
+function uniProtReferencesByEntity(model: StructureModel) {
+  const refs = mmcifSource(model)?.frame?.categories.ma_target_ref_db_details
+  const byEntity = new Map<
+    string,
+    { reference: EntityUniProtReference; length: number }
+  >()
+  const field = (name: string, row: number) =>
+    refs?.getField(name)?.str(row) ?? ''
+  for (let i = 0; i < (refs?.rowCount ?? 0); i++) {
+    const accession = field('db_accession', i)
+    const start = Number(field('seq_db_align_begin', i))
+    const end = Number(field('seq_db_align_end', i))
+    if (
+      field('db_name', i) === 'UNP' &&
+      accession &&
+      Number.isInteger(start) &&
+      Number.isInteger(end) &&
+      start >= 1
+    ) {
+      byEntity.set(field('target_entity_id', i), {
+        reference: {
+          accession,
+          name: field('db_code', i) || undefined,
+          gene: field('gene_name', i) || undefined,
+          start,
+        },
+        length: end - start + 1,
+      })
+    }
+  }
+  return byEntity
 }
 
 function canonicalSequencesByEntity(model: StructureModel) {
-  const source = model.obj?.data.sourceData?.data as MmcifSourceData | undefined
-  const entityPoly = source?.db?.entity_poly
+  const entityPoly = mmcifSource(model)?.db?.entity_poly
   const byEntity = new Map<string, string>()
   if (entityPoly) {
     for (let i = 0; i < entityPoly.entity_id.rowCount; i++) {
@@ -210,20 +278,25 @@ export function extractEntities(model: StructureModel): Entity[] | undefined {
   const chains = chainsByEntity(model)
   const authIds = authSeqIdsByEntity(model)
   const canonical = canonicalSequencesByEntity(model)
+  const references = uniProtReferencesByEntity(model)
   return model.obj?.data.sequence.sequences.map(s => {
     const seqIds = Array.from(s.sequence.seqId.toArray())
+    const seq = oneLetterSequence(
+      s.sequence.code.toArray(),
+      canonical.get(s.entityId),
+    )
+    const ref = references.get(s.entityId)
+    const uniProt = ref?.length === seq.length ? ref.reference : undefined
     return {
       entityId: s.entityId,
-      seq: oneLetterSequence(
-        s.sequence.code.toArray(),
-        canonical.get(s.entityId),
-      ),
+      seq,
       seqIds,
       chains: chains.get(s.entityId) ?? [],
       ...(isNucleicAcid(model, s.entityId) ? { nucleicAcid: true } : {}),
       ...(authIds
         ? { authSeqIds: fillAuthSeqIds(seqIds, authIds.get(s.entityId)) }
         : {}),
+      ...(uniProt ? { uniProt } : {}),
     }
   })
 }

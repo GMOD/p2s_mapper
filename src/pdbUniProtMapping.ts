@@ -1,3 +1,5 @@
+import type { Entity } from './extractStructureSequences.ts'
+
 // UniProt <-> PDB residue mapping.
 //
 // UniProt feature coordinates are positions in the UniProt canonical sequence.
@@ -168,6 +170,38 @@ function dedupeSegments(segments: UniProtStructureSegment[]) {
     seen.add(key)
     return isNew
   })
+}
+
+/**
+ * The UniProt mappings a model file states for its own entities (see
+ * `EntityUniProtReference`), one per accession, in the shape SIFTS gives an
+ * RCSB entry. Lets `chooseUniProtMappingForEntity` name the protein of
+ * whichever chain the transcript maps to in an AlphaFold complex, where one
+ * accession for the whole structure would annotate the partner chain with the
+ * transcript's features.
+ */
+export function entityUniProtMappings(
+  entities: readonly Pick<Entity, 'entityId' | 'seq' | 'uniProt'>[],
+) {
+  const byAccession = new Map<string, UniProtStructureMapping>()
+  for (const { entityId, seq, uniProt } of entities) {
+    if (uniProt && seq.length > 0) {
+      const mapping = byAccession.get(uniProt.accession) ?? {
+        accession: uniProt.accession,
+        name: uniProt.name,
+        segments: [],
+      }
+      mapping.segments.push({
+        entityId,
+        unpStart: uniProt.start,
+        unpEnd: uniProt.start + seq.length - 1,
+        structStart: 0,
+        structEnd: seq.length - 1,
+      })
+      byAccession.set(uniProt.accession, mapping)
+    }
+  }
+  return [...byAccession.values()]
 }
 
 /** 1-based UniProt position -> 0-based structure position, for an AlphaFold

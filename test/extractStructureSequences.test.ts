@@ -2,7 +2,9 @@ import { expect, test } from 'vitest'
 
 import {
   type Entity,
+  chooseUniProtMappingForEntity,
   entityLabel,
+  entityUniProtMappings,
   extractEntities,
   fillAuthSeqIds,
   makeLabelSeqIdIndex,
@@ -26,11 +28,32 @@ function model(
     subtype?: string
     /** entity_poly.pdbx_seq_one_letter_code_can */
     canonical?: string
+    /** the entity's ma_target_ref_db_details row */
+    ref?: {
+      dbName: string
+      accession: string
+      code: string
+      gene: string
+      begin: string
+      end: string
+    }
   }[],
   observed?: { entityId: string; labelSeqId: number; authSeqId: number }[],
 ) {
   const entityIds = entities.map(e => e.entityId)
   const withCanonical = entities.filter(e => e.canonical !== undefined)
+  const withRef = entities.flatMap(e =>
+    e.ref ? [{ entityId: e.entityId, ...e.ref }] : [],
+  )
+  const refFields: Record<string, (r: (typeof withRef)[number]) => string> = {
+    target_entity_id: r => r.entityId,
+    db_name: r => r.dbName,
+    db_accession: r => r.accession,
+    db_code: r => r.code,
+    gene_name: r => r.gene,
+    seq_db_align_begin: r => r.begin,
+    seq_db_align_end: r => r.end,
+  }
   return {
     obj: {
       data: {
@@ -52,6 +75,17 @@ function model(
                 pdbx_seq_one_letter_code_can: {
                   rowCount: withCanonical.length,
                   value: (row: number) => withCanonical[row]!.canonical!,
+                },
+              },
+            },
+            frame: {
+              categories: {
+                ma_target_ref_db_details: {
+                  rowCount: withRef.length,
+                  getField: (name: string) => {
+                    const read = refFields[name]
+                    return read && { str: (row: number) => read(withRef[row]!) }
+                  },
                 },
               },
             },
@@ -305,4 +339,77 @@ test('labelSeqIdAt reads one position, and nothing for a missing one', () => {
   expect(labelSeqIdAt(entity, 2)).toBe(97)
   expect(labelSeqIdAt(entity, 3)).toBeUndefined()
   expect(labelSeqIdAt(entity, undefined)).toBeUndefined()
+})
+
+test('extractEntities reads the UniProt entry a ModelCIF names for each entity', () => {
+  // AlphaFold DB's GSTM1/GSTP1 complex AF-0000000210612662 numbers GSTP1 as
+  // entity 1 on chain B and GSTM1 as entity 2 on chain A
+  const ref = (accession: string, gene: string, end: string) => ({
+    dbName: 'UNP',
+    accession,
+    code: `${gene}_HUMAN`,
+    gene,
+    begin: '1',
+    end,
+  })
+  const entities = extractEntities(
+    model([
+      {
+        entityId: '2',
+        seq: 'MPMIL',
+        seqIds: [1, 2, 3, 4, 5],
+        ref: ref('P09488', 'GSTM1', '5'),
+      },
+      {
+        entityId: '1',
+        seq: 'MPPY',
+        seqIds: [1, 2, 3, 4],
+        ref: ref('P09211', 'GSTP1', '4'),
+      },
+      // a stated span that is not the entity's length cannot place a residue
+      {
+        entityId: '3',
+        seq: 'MKV',
+        seqIds: [1, 2, 3],
+        ref: ref('P00001', 'X', '9'),
+      },
+      { entityId: '4', seq: 'MKV', seqIds: [1, 2, 3] },
+    ]),
+  )!
+  expect(entities.map(e => e.uniProt)).toEqual([
+    { accession: 'P09488', name: 'GSTM1_HUMAN', gene: 'GSTM1', start: 1 },
+    { accession: 'P09211', name: 'GSTP1_HUMAN', gene: 'GSTP1', start: 1 },
+    undefined,
+    undefined,
+  ])
+
+  const mappings = entityUniProtMappings(entities)
+  expect(mappings.map(m => m.accession)).toEqual(['P09488', 'P09211'])
+  const gstp1 = chooseUniProtMappingForEntity(mappings, {
+    entityId: '1',
+    chains: ['B'],
+  })
+  expect(gstp1?.accession).toBe('P09211')
+  expect(gstp1?.segments).toEqual([
+    { entityId: '1', unpStart: 1, unpEnd: 4, structStart: 0, structEnd: 3 },
+  ])
+})
+
+test('entityUniProtMappings places a fragment model by the UniProt residue it starts at', () => {
+  const [mapping] = entityUniProtMappings([
+    {
+      entityId: '1',
+      seq: 'MKVL',
+      uniProt: { accession: 'P11532', start: 1401 },
+    },
+  ])
+  expect(mapping?.segments).toEqual([
+    {
+      entityId: '1',
+      unpStart: 1401,
+      unpEnd: 1404,
+      structStart: 0,
+      structEnd: 3,
+    },
+  ])
 })

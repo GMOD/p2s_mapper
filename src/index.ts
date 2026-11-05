@@ -26,6 +26,7 @@ export * from './pdbEntry.ts'
 
 // Structure sources
 export * from './alphaFoldModels.ts'
+export * from './alphaFoldComplexes.ts'
 export * from './structureSources.ts'
 export * from './uniProtSearch.ts'
 export * from './dbIds.ts'
